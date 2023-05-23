@@ -1,4 +1,4 @@
-import { write_training_data } from './hand_eval'
+import { self_play } from './hand_eval'
 
 
-console.log(write_training_data())
+console.log(self_play())

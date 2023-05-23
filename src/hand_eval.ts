@@ -45,7 +45,7 @@ function encode_hand5(hand: string) {
 
 type Card5 = [Card, Card, Card, Card, Card]
 
-export function gen_data5() {
+function gen_data5() {
   let hand = make_deal(0)
 
   let rank = rank5(split_cards(5, hand) as Card5)
@@ -63,15 +63,15 @@ export function gen_data5() {
   }
 }
 
-export function gen_training_data() {
+function gen_training_data() {
   let res = []
-  for (let i = 0; i < 1000; i++) {
+  for (let i = 0; i < 10000; i++) {
     res.push(gen_data5())
   }
   return res
 }
 
-export function write_training_data() {
+function write_training_data(game_id: number) {
   let data = gen_training_data()
   let res = data.flatMap(data => {
     let { rank_probability, high_probability, planes } = data
@@ -84,6 +84,14 @@ export function write_training_data() {
   })
 
   zlib.gzip(Buffer.from(res), (err, buffer) => {
-    fs.writeFile('data/hand_rank5.gz', buffer)
+    let r = (Math.random() + 1).toString(36).substring(7)
+    fs.writeFile(`data/hand_rank5_${r}_${game_id}.gz`, buffer)
   })
+}
+
+
+export function self_play() {
+  for (let i = 0; i < 100; i++) {
+    write_training_data(i + 1)
+  }
 }
