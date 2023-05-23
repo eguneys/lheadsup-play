@@ -1,0 +1,29 @@
+{
+  "name": "lheadsup-play",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "rimraf dist && esbuild ./src/main.ts --platform=node --format=esm --bundle --outdir=dist && tsc --emitDeclarationOnly",
+    "lint:watch": "tsc --noEmit --watch",
+    "test": "vitest --run",
+    "test:watch": "vitest --watch",
+    "bench": "vitest bench",
+    "start": "node ./dist/main.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "esbuild": "^0.17.16",
+    "lheadsup": "link:../lheadsup",
+    "rimraf": "^5.0.0",
+    "typescript": "^5.0.4",
+    "vitest": "^0.30.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.2.3"
+  }
+}

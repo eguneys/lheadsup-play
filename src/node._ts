@@ -1,0 +1,12 @@
+export class Node {
+  constructor(
+    readonly edges: Edge[],
+    readonly parent?: Node
+  )
+}
+
+export class Edge {
+  constructor(
+    readonly move: Move
+  )
+}

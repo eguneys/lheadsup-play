@@ -1,0 +1,301 @@
+export class Search {
+
+  _minibatch = []
+  _compute
+  _search
+
+  InitializeIteration() {
+  }
+
+  GatherMinibatch() {
+
+    let { _minibatch } = this
+
+    let minibatch_size = 0
+    while (minibatch_size < 10) {
+
+      let new_start = _minibatch.length
+
+      this.PickNodesToExtend()
+      
+      for (let i = new_start; i < _minibatch.length; i++) {
+        let picked_node = _minibatch[i]
+        if (picked_node.IsCollision()) {
+          continue
+        }
+        non_collisions++;
+        minibatch_size++;
+      }
+
+
+      for (let i = new_start; i < _minibatch.length; i++) {
+        if (!_minibatch[i].nn_queried) { continue }
+        _computation.AddInput(_minibatch[i].hash, _minibatch[i].input_planes)
+      }
+
+      for (let i = new_start; i < _minibatch.length; i++) {
+        let picked_node = _minibatch[i]
+
+        if (picked_node.IsCollision()) {
+          if (picked_node.maxvisit > 0 &&
+              collisions_left > picked_node.multivisit) {
+            let extra = Math.min(picked_node.maxvisit, collisions_left) - 
+            picked_node.multivisit
+
+          picked_node.multivisit += extra
+
+          let node = picked_node.node
+          for (node = node.parent; 
+               node !== _search._root_node.parent;
+               node = node.parent) {
+                 node.IncrementNInFlight(extra)
+               }
+          }
+          if ((collisions_left -= picked_node.multivisit) <= 0) { return }
+          if (_search._stop) { return }
+        }
+      }
+    }
+  }
+
+  PickNodesToExtend() {
+    let { _minibatch } = this
+
+    let results = PickNodesToExtendTask(_search._root_node, 0)
+    _minibatch.push(...results)
+  }
+
+  PickNodesToExtendTask(node: Node, base_depth: number) {
+    let { _search } = this
+
+    let best_edge,
+    second_best_edge
+
+    const best_node_n = _search._current_bets_edge.GetN()
+
+    let passed_off = 0
+    let completed_visits = 0
+
+    let is_root_node = node === _search._root_node
+
+    let max_limit = Number.MAX_VALUE
+
+
+  }
+
+  CollectCollisions() {
+    let { _minibatch } = this
+
+    for (let node_to_process of _minibatch) {
+      if (node_to_process.IsCollision()) {
+        _search.shared_collisions.push([node_to_process.node, node_to_process.multivisit])
+      }
+    }
+  }
+
+  RunNNComputation() {
+    _computation.Compute()
+  }
+
+
+  FetchMinibatchResults() {
+    let idx_in_computation = 0
+    let { _minibatch } = this
+
+    for (let node_to_process of _minibatch) {
+      this.FetchSingleNodeResult(node_to_process, idx_in_computation)
+      if (node_to_process.nn_queried) { idx_in_computation++; }
+    }
+  }
+
+  FetchSingleNodeResult(node_to_process: NodeToProcess, idx_in_computation: number) {
+    if (node_to_process.IsCollision()) { return }
+    let { node } = node_to_process
+
+    if (!node_to_process.nn_queried) {
+      node_to_process.v = node.GetWL()
+      node_to_process.d = node.GetD()
+      node_to_process.m = node.GetM()
+      return
+    }
+
+    node_to_process.v = -_computation.GetQVal(idx_in_computation)
+    node_to_process.d = _computation.GetDVal(idx_in_computation)
+    node_to_process.m = _computation.GetMVal(idx_in_computation)
+
+    let max_p = -Infinity
+
+
+    let intermediate = []
+
+    for (let edge of node.edges) {
+      let p = _computation.GetPVal(idx_in_computation, 
+                                   edge.move.as_nn_index(node_to_process.probability_transform))
+
+      intermediate.push(p)
+      max_p = Math.max(max_p, p)
+    }
+
+    let total = 0
+
+    for (let i = 0; i < intermediate.length; i++) {
+      let p = Math.exp((intermediate[i] - max_p) / _params.GetPolicySoftmaxTemp())
+
+      intermediate[i] = p
+      total += p
+    }
+
+    let counter = 0
+
+    const scale = total > 0 ? 1 / total : 1
+
+    for (let edge of node.edges) {
+      edge.SetP(intermediate[counter++] * scale)
+    }
+
+    node.SortEdges()
+  }
+
+  DoBackupUpdate() {
+    let { _minibatch, _number_out_of_order } = this
+
+    for (let node_to_process of _minibatch) {
+      DoBackupUpdateSingleNode(node_to_process)
+    }
+  }
+
+  DoBackupUpdateSingleNode(node_to_process: NodeToProcess) {
+    let { node } = node_to_process
+
+    if (node_to_process.IsCollision()) {
+      return
+    }
+
+    let update_parent_bounds = node.IsTerminal() && !node.GetN()
+
+
+    let { v, d, m } = node_to_process
+
+    let n_to_fix = 0
+    let v_delta = 0,
+      d_delta = 0,
+      m_delta = 0
+
+    let solid_threshold = _params.GetSolidTreeThreshold()
+    for (let n = node, p; n !== search_._root_node.parent; n = p) {
+      p = n.parent
+      if (n.IsTerminal()) {
+        v = n.GetWL()
+        d = n.GetD()
+        m = n.GetM()
+      }
+      n.FinalizeScoreUpdate(v, d, m, node_to_process.multivisit)
+      if (n_to_fix > 0 && !n.IsTerminal()) {
+        if (n.MakeSolid() && n === _search._root_node) {
+          _search._current_best_edge =
+            _search.GetBestChildNoTemperature(_search._root_node, 0)
+        }
+      }
+
+      if (!p) { break }
+
+      let old_update_parent_bounds = update_parent_bounds
+
+      if (p.IsTerminal()) { n_to_fix = 0 }
+
+      let maybe_set_bounds = false
+      [maybe_set_bounds, n_to_fix, v_delta, d_delta, m_delta] = 
+        this.MaybeSetBounds(p, m, n_to_fix, v_delta, d_delta, m_delta)
+
+      update_parent_bounds =
+        update_parent_bounds && p !== _search._root_node && !p.IsTerminal() &&
+        maybe_set_bounds
+
+      // TODO
+      // Q will be flipped for opponent
+      v = -v
+      v_delta = -v_delta
+      m++;
+
+
+      if (p === _search._root_node &&
+          ((old_update_parent_bounds && n.IsTerminal()) ||
+           (n !== _search._current_best_edge.node &&
+            _search._current_best_edge.GetN() <= n.GetN()))) {
+        _search._current_best_edge = _search.GetBestChildNoTemperature(_search._root_node, 0)
+      }
+    }
+
+    _search._total_playouts += node_to_process.multivisit
+    _search._cum_depth += node_to_process.depth * node_to_process.multivisit
+    _search._max_depth = Math.max(_search._max_depth, node_to_process.depth)
+  }
+
+  MaybeSetBounds(p: Node, m: number, 
+                 n_to_fix: number, 
+                 v_delta: number, d_delta: number, m_delta: number) {
+                   let losing_m = 0
+
+                   let lower = ;
+                   let upper = ;
+
+                   for (let edge of p.edges) {
+                     let [edge_lower, edge_upper] = edge.GetBounds()
+                     lower = Math.max(edge_lower, lower)
+                     upper = Math.max(edge_upper, upper)
+                     
+                     if (edge_lower === GameResult.ONE_WON && !is_tb) {
+                       break
+                     } else if (edge_upper === GameResult.TWO_WON) {
+                       losing_m = Math.max(losing_m, edge.GetM(0))
+                     }
+                   }
+
+                   let check_the_parent_too = true
+
+                   if (lower === GameResult.TWO_WON && upper === GameResult.ONE_WON) {
+                     check_the_parent_too = false
+                   } else if (lower === upper) {
+                     n_to_fix = p.GetN()
+
+                     let cur_v = p.GetWL(),
+                       cur_d = p.GetD(),
+                       cur_m = p.GetM()
+
+                     p.MakeTerminal(
+                       -upper,
+                       (upper === GameResult.TWO_WON ? Math.max(losing_m, m) : m) + 1)
+                       v_delta = -(p.GetWL() - cur_v)
+                       d_delta = p.GetD() - cur_d
+                       m_delta = p.GetM() - cur_m
+                   } else {
+                     p.SetBounds(-upper, -lower)
+                   }
+
+                   return [check_the_parent_too, n_to_fix, v, d, m]
+                 }
+
+  UpdateCounters() {
+  }
+
+  ExecuteOneIteration() {
+    this.InitializeIteration()
+
+
+    this.GatherMinibatch()
+    this.CollectCollisions()
+    this.RunNNComputation()
+
+    this.FetchMinibatchResults()
+
+    this.DoBackupUpdate()
+    this.UpdateCounters()
+  }
+
+
+  Run() {
+    do {
+      this.ExecuteOneIteration()
+    } while (this.IsSearchActive())
+  }
+}
