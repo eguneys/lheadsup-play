@@ -3,21 +3,26 @@ import zlib from 'node:zlib'
 import { Card, rank5, make_deal, split_cards } from 'lheadsup'
 
 type TrainingData = {
-  rank_probability: number,
-  high_probability: number,
+  rank_probabilities: number[],
+  high_probabilities: number[],
   planes: number[]
 }
 
-
 const hand_ranks = ['high', 'pair', 'pair2', 'set', 'full', 'straight', 'flush', 'quad', 'sflush']
 function p_rank(rank: string) {
-  return hand_ranks.indexOf(rank) + 1
+  let i = hand_ranks.indexOf(rank)
+  let res = new Array(hand_ranks.length)
+  res[i] = 1
+  return res
 }
 
 const suits = 'hdsc'
 const ranks = '23456789TJQKA'
 function p_high(rank: string) {
-  return ranks.indexOf(rank) + 1
+  let i = ranks.indexOf(rank)
+  let res = new Array(ranks.length)
+  res[i] = 1
+  return res
 }
 
 const encode_suit: Record<string, number> = {
@@ -43,6 +48,9 @@ function encode_hand5(hand: string) {
   return res
 }
 
+let total: number
+let stats: Record<string, number>
+
 type Card5 = [Card, Card, Card, Card, Card]
 
 function gen_data5() {
@@ -52,21 +60,33 @@ function gen_data5() {
 
   let { rank_name, high_card } = rank
 
+  if ((stats[rank_name!] / total) > 0.1) {
+    if (Math.random() < 0.98) {
+      return
+    }
+  }
+
+  stats[rank_name!]++;
+  total++;
+
   let planes = encode_hand5(hand)
-  let rank_probability = p_rank(rank_name!)
-  let high_probability = p_high(high_card![0])
+  let rank_probabilities = p_rank(rank_name!)
+  let high_probabilities = p_high(high_card![0])
 
   return {
     planes, 
-    rank_probability, 
-    high_probability
+    rank_probabilities, 
+    high_probabilities
   }
 }
 
 function gen_training_data() {
   let res = []
   for (let i = 0; i < 10000; i++) {
-    res.push(gen_data5())
+    let data = gen_data5()
+    if (data) {
+      res.push(data)
+    }
   }
   return res
 }
@@ -74,11 +94,11 @@ function gen_training_data() {
 function write_training_data(game_id: number) {
   let data = gen_training_data()
   let res = data.flatMap(data => {
-    let { rank_probability, high_probability, planes } = data
+    let { rank_probabilities, high_probabilities, planes } = data
 
     return [
-      rank_probability,
-      high_probability,
+      ...rank_probabilities,
+      ...high_probabilities,
       ...planes
     ]
   })
@@ -91,7 +111,20 @@ function write_training_data(game_id: number) {
 
 
 export function self_play() {
-  for (let i = 0; i < 100; i++) {
+  total = 0
+  stats = {}
+  hand_ranks.forEach(_ => stats[_] = 0)
+
+  let i
+  for (i = 0; i < 100; i++) {
     write_training_data(i + 1)
   }
+
+  while (total < 1000000) {
+    write_training_data(i + 1)
+    i++;
+  }
+
+  hand_ranks.map(_ => console.log(`${_}: ${(stats[_] /= total) * 100}%`))
+  console.log(`Total: ${total}`)
 }
