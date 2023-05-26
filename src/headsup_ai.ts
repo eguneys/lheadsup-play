@@ -85,6 +85,32 @@ export class RandomMixPlayer implements Player {
   }
 }
 
+
+export class MaxRaiser implements Player {
+
+  static make = () => new MaxRaiser()
+
+  act(history: RoundNPov[], round: RoundNPov, dests: Dests) {
+    if (dests.raise) {
+      let { match, min_raise, cant_match, cant_minraise } = dests.raise
+      let max_raise = round.stacks[0].stack - match
+
+      if (cant_match !== undefined) {
+        return `raise ${cant_match}-0`
+      } else if (cant_minraise !== undefined) {
+        return `raise ${match}-${cant_minraise}`
+      } else {
+        return `raise ${match}-${max_raise}`
+      }
+    }
+    if (dests.call) {
+      return `call ${dests.call.match}`
+    }
+
+    throw `Cant go "allin" ${dests.fen}`
+  }
+}
+
 export class MinRaiser implements Player {
 
   static make = () => new MinRaiser()
