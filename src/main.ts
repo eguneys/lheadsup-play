@@ -1,8 +1,8 @@
 import { self_play } from './hand_eval'
-import { Search } from './mtcs'
+import { MCTSPlayer } from './mcts'
 import { sum, avg_stats_fen, RandomMixPlayer, MaxRaiser, MinRaiser, Caller, Folder, one_tournament } from './headsup_ai'
 
-let players = [
+let ps = [
   ['max_raiser', 'always raises maximum', MaxRaiser.make()],
   ['min_raiser', 'always raises minimum', MinRaiser.make()],
   ['caller', 'always calls', Caller.make()],
@@ -15,16 +15,13 @@ let players = [
   ])]
 ]
 
-mashup_players()
+let mc = ['mcts', 'uses mcts', new MCTSPlayer()]
 
+//mashup_players()
+
+mashup_players([mc, ps[0]])
 //xmash(players[1], players[0])
 
-//mash(players[1], players[1])
-//mash(players[2], players[2])
-//mash(players[3], players[3], { domination: [], even: [], edge: []})
-//mash(players[0], players[3])
-//mash(players[0], players[0])
-//mash(players[0], players[1])
 
 function colorize(color: number, output: string) {
   return ['\033[', color, 'm', output, '\033[0m'].join('')
@@ -94,23 +91,27 @@ function xmash(p1: any, p2: any) {
   }
 }
 
-function mashup_players() {
+function mashup_players(players: any = ps) {
   let mash_res: any = {
     domination: [],
     even: [],
     edge: []
   }
 
-  players.forEach(p => {
+  /*
+  players.forEach((p: any) => {
     console.log(`${p[0]} vs ${p[0]}`)
     mash(p, p, mash_res)
   })
+ */
 
-  players.forEach((p1, i) =>
-                  players.forEach((p2, i2) => {
+  players.forEach((p1: any, i: number) =>
+                  players.forEach((p2: any, i2: number) => {
                     if (i < i2) {
-                      console.log(`${p1[0]} vs ${p2[0]}`)
+                      //process.stdout.write(colorize(93, `${p1[0]} vs ${p2[0]} `))
                       mash(p1, p2, mash_res)
+                      console.log(mash_res.header)
+                      console.log(mash_res.more_stats)
                     }
                   }))
 
