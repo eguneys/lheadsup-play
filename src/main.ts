@@ -75,9 +75,9 @@ function mashup_players() {
   players.forEach((p1, i) =>
                   players.forEach((p2, i2) => i < i2 && mash(p1, p2, mash_res)))
 
-  let domination = mash_res.domination.join('  ')
-  let even = mash_res.even.join('  ')
-  let edge = mash_res.edge.join('  ')
+  let domination = mash_res.domination.join('')
+  let even = mash_res.even.join('')
+  let edge = mash_res.edge.join('')
 
   console.log(`domination \n${domination}`)
   console.log(`even \n${even}`)
