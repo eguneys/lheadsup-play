@@ -13,15 +13,17 @@ export function avg_stats_fen(a: MatchStats, b: MatchStats) {
   }
 
   function get_fen(a: MatchStats) {
+    let wbsw = a.nb_wins + a.nb_backs + a.nb_swins
 
     return `\
-wins ${avg(a.nb_wins, t.nb_wins)}% \
-backs ${avg(a.nb_backs, t.nb_backs)}% \
-swins ${avg(a.nb_swins, t.nb_swins)}% \
-max win ${a.max_win} \
-max swin ${a.max_swin} \
-total wins ${avg(a.total_wins, t.total_wins)}% \
-total swins ${avg(a.total_swins, t.total_swins)}% \
+w ${avg(a.nb_wins, t.nb_wins)}% \
+b ${avg(a.nb_backs, t.nb_backs)}% \
+sw ${avg(a.nb_swins, t.nb_swins)}% \
+max w ${a.max_win} \
+max s ${a.max_swin} \
+total w ${avg(a.total_wins, t.total_wins)}% \
+total sw ${avg(a.total_swins, t.total_swins)}% \
+w/b/sw ${avg(a.nb_wins, wbsw)}/${avg(a.nb_backs, wbsw)}/${avg(a.nb_swins, wbsw)}\
 `
   }
 
@@ -43,9 +45,9 @@ function min_raise_logic_for_allin(dests: Dests) {
   if (dests.raise) {
     let { match, min_raise, cant_match, cant_minraise } = dests.raise
 
-    if (cant_match) {
+    if (cant_match !== undefined) {
       return `raise ${cant_match}-0`
-    } else if (cant_minraise) {
+    } else if (cant_minraise !== undefined) {
       return `raise ${match}-${cant_minraise}`
     } else {
       return `raise ${match}-${min_raise}`
@@ -58,9 +60,34 @@ function min_raise_logic_for_allin(dests: Dests) {
   throw `Cant go "allin" ${dests.fen}`
 }
 
+
+export class RandomMixPlayer implements Player {
+
+  i: number
+  turn_i: number
+
+  constructor(readonly players: Player[]) {
+    this.i = 0
+    this.turn_i = 0
+  }
+
+  act(history: RoundNPov[], round: RoundNPov, dests: Dests) {
+    let { players, i, turn_i } = this
+    let res = players[turn_i].act(history, round, dests)
+
+    this.i++;
+
+    if (this.i % 4 === 0) {
+      this.turn_i = Math.floor(Math.random() * players.length)
+    }
+
+    return res
+  }
+}
+
 export class MinRaiser implements Player {
 
-  static make = () => new Folder()
+  static make = () => new MinRaiser()
 
   act(history: RoundNPov[], round: RoundNPov, dests: Dests) {
     return min_raise_logic_for_allin(dests)
@@ -69,7 +96,7 @@ export class MinRaiser implements Player {
 
 export class Caller implements Player {
 
-  static make = () => new Folder()
+  static make = () => new Caller()
 
   act(history: RoundNPov[], round: RoundNPov, dests: Dests) {
     if (dests.call) {
@@ -96,7 +123,8 @@ export interface Player {
 
 export function one_tournament(p1: Player, p2: Player) {
 
-  let seats = [p1, p2]
+  let ps = [p1, p2]
+  let seats = [0, 1]
   let res = [0, 0]
   let res_stats = [MatchStats.empty(), MatchStats.empty()]
 
@@ -106,19 +134,24 @@ export function one_tournament(p1: Player, p2: Player) {
     // swap seats
     seats = [seats[1], seats[0]]
 
-    let { nb_deals, winner, stats } = one_match(seats[0], seats[1])
+    let { nb_deals, winner, stats } = one_match(ps[seats[0]], ps[seats[1]])
     res_nb_deals.push(nb_deals[0])
-    if (seats[0] === p1) {
+    if (seats[0] === 0) {
       res_stats[0] = merge(res_stats[0], stats[0])
       res_stats[1] = merge(res_stats[1], stats[1])
+      if (winner === 1) {
+        res[0]++;
+      } else {
+        res[1]++;
+      }
     } else {
       res_stats[0] = merge(res_stats[0], stats[1])
       res_stats[1] = merge(res_stats[1], stats[0])
-    }
-    if (seats[winner - 1] === p1) {
-      res[0]++;
-    } else {
-      res[1]++;
+      if (winner === 1) {
+        res[1]++;
+      } else {
+        res[0]++;
+      }
     }
   }
   return {
@@ -202,6 +235,10 @@ export function one_match(p1: Player, p2: Player): MatchResult {
   let h = Headsup.make()
   let i = 0 
 
+
+  let prev_action_fens = []
+  let prev_phase
+
   while (!h.winner) {
     if (h.game_dests.deal) {
 
@@ -222,6 +259,7 @@ export function one_match(p1: Player, p2: Player): MatchResult {
 
     if (round && round_dests) {
       if (round_dests.phase) {
+        prev_phase = h.round!.fen
         h.round_act('phase')
       } else if (round_dests.win) {
         h.round_act('win')
@@ -235,7 +273,13 @@ export function one_match(p1: Player, p2: Player): MatchResult {
         })
 
 
+        let _ = h.round!.fen
+        try {
         h.round_act('share')
+        } catch (e) {
+          console.log(prev_action_fens, prev_phase, '\n', _)
+          throw e
+        }
         /*
         if (h.winner) {
           console.log(h.history.map(_ => _.fen))
@@ -244,14 +288,20 @@ export function one_match(p1: Player, p2: Player): MatchResult {
       } else if (round_dests.showdown) {
         h.round_act('showdown')
       } else {
-      
         let { action_side } = round
+
+        let _ = h.round!.fen
+        //console.log(_, round_dests.fen)
 
         let action = players[action_side - 1].act(history.map(_ => _.pov(action_side)), round.pov(action_side), round_dests)
 
-
-        let _ = h.round!.fen
+        //console.log(action)
         h.round_act(action)
+
+        if (prev_action_fens.length > 4) {
+          prev_action_fens.shift()
+        }
+        prev_action_fens.push(_)
       }
     }
   }
