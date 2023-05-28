@@ -76,8 +76,8 @@ function ehs(hand: Card[], board: Card[]) {
   }
 
   for (let i = 0; i < nb; i++) {
-    let op = card_outs([], 2)
-    let board_rest = card_outs(board, 5 - board.length)
+    let op = card_outs([...board, ...hand], 2)
+    let board_rest = card_outs([...hand, ...board, ...op], 5 - board.length)
 
     let my_hand = [...hand, ...board, ...board_rest]
     let op_hand = [...op, ...board, ...board_rest]
@@ -106,6 +106,10 @@ console.log(ehs(['Kc', 'Qd'], []))
 console.log(ehs(['Ac', 'Qd'], []))
 console.log(ehs(['Ac', 'Ad'], []))
 */
+//console.log(ehs(['Td', 'Qh'], ['2c', 'Jd', 'Kc']))
+//
+//console.log(ehs(['2s', '4h'], ['Td','Tc','6h','Qs']))
+// console.log(ehs(['9s', '3c'], ['8s','Td','6s','Ah']))
 
 function model_value(round: RoundNPov) {
   let { small_blind, pot, middle } = round
@@ -132,9 +136,26 @@ function model_value(round: RoundNPov) {
     }
   })
 
+  let reveal_factor = middle.length / 5
+
   let strength = ehs(round.stacks[0].hand!, middle)
 
-  let stack = safe_stack + (showdown_value / 6000) * strength + foldwins[0] / 6000
+  let [r, a, b, c, d] = [0.05, 0.25, 0.2, 0.2, 0.3]
+  
+  let policy = ((strength - 0.5) / 0.5) * 0.15
+
+  a -= policy
+  b += policy
+
+  const se = (n: number) => (n / 3000) - 1
+  let res = r * reveal_factor + a * se(safe_stack) + b * (showdown_value / 6000) * strength - c * se(round.stacks[1].stack) + d * ((foldwins[0] > 2000 ? 0 : foldwins[0])/ 6000)
+
+  if (round.stacks[0].state === 'w') {
+    //console.log(round.fen, res, reveal_factor, safe_stack, showdown_value, strength, foldwins[0])
+  }
+ 
+  return res
+
 
   /*
 
@@ -249,12 +270,6 @@ finally I am not considering advanced factors like slow playing or bluffing base
 
 */
 
-
-  let res = (stack_risk_factor + strength_fold_win_equity + strength_showdown_equity + strength_fold_loss_equity) / 4
-
-  //console.log(res, round.fen, stack_risk_factor, fold_win_factor, fold_loss_factor, strength_showdown_equity, strength, strength_fold_loss_equity)
- 
-  return res
 }
 
 function play_move(round: RoundN, move: Move) {
@@ -578,7 +593,7 @@ export class Search {
       throw 3
     }
    */
-    // console.log(i, current_state.after.fen, current_state.move, current_state.value)
+    //console.log(i, current_state.after.fen, current_state.move, current_state.value)
     return current_state.value
   }
 
@@ -619,15 +634,16 @@ export class Search {
     while (true) {
       const [selected_node, moves_to_node] = this.selection()
       this.expand_node(selected_node, moves_to_node)
-      const values = [...Array(5).keys()].map(_ => this.simulate_random_playout())
-      let value = sum(values) / values.length
-      if (moves_to_node[0] === 'call 10' || moves_to_node[0] === 'fold') {
-        //console.log(moves_to_node, value, selected_node)
-        //console.log(moves_to_node, value)
-      }
+      /*
+      let values = [...Array(5)].map(() => this.simulate_random_playout())
+      let value = sum(values) / 5
+     */
+      let value = this.simulate_random_playout()
       //let value = this.simulate_random_playout()
 
-      //console.log(moves_to_node.length, value, this.history.last.after.fen, moves_to_node.join(' '))
+      if (moves_to_node[0] !== 'fold') {
+        //console.log(value, this.history.last.after.fen, moves_to_node.join(' '))
+      }
       /*
       if (moves_to_node[0] === 'call 10') {
         //console.log(moves_to_node.join(' '), value)
@@ -637,12 +653,12 @@ export class Search {
       this.backpropagate(selected_node, value)
 
       //console.log(nb_iterations, selected_node.visits, selected_node.values, moves_to_node.join(' '))
-      if (nb_iterations++ > 1000) {
+      if (nb_iterations++ > 200) {
         break
       }
     }
 
-    console.log(this.root.children.map(_ => [_.parent!.move, _.visits, _.values, _.values / _.visits]))
+    //console.log(this.root.children.map(_ => [_.parent!.move, _.visits, _.values, _.values / _.visits]))
     const best_edge = this.root.children.reduce((a: Node, b: Node) => (a.visits > b.visits ? a : b)).parent!
     return best_edge
   }
@@ -673,10 +689,36 @@ function tests() {
   let res,
   round
 
+  round = RoundNPov.from_fen(`10-20 1 | @2884 9s3c check-0 / i2864 raise-0-0-20 $ 232-12 !8sTd6sAh`)
+  res = Search.begin(round)
+  console.log(round.fen, res)
+
+
+  for (let i = 0; i < 3; i++) {
+    round = RoundNPov.from_fen(`10-20 2 | @4876 TsTc / i1024 raise-0-0-20 $ 80-12 !9d9s2c`)
+    res = Search.begin(round)
+    console.log(round.fen, res)
+  }
+
+  round = RoundNPov.from_fen(`10-20 1 | @2800 5h4h raise-0-0-160 / i2640 raise-0-160-160 $ 80-12 !TsQdQc`)
+  res = Search.begin(round)
+  console.log(round.fen, res)
+
+  round = RoundNPov.from_fen(`10-20 1 | @2600 2s4h raise-0-0-240 / i2560 raise-0-240-240 $ 120-12 !TdTc6hQs`)
+  res = Search.begin(round)
+  console.log(round.fen, res)
+
+
+
+  round = RoundNPov.from_fen(`10-20 1 | @2960 TdQh / i2960 $ 80-12 !2cJdKc`)
+  res = Search.begin(round)
+  console.log(round.fen, res)
+
+
   round = RoundNPov.from_fen(`10-20 2 | @2990 KsQd sb-0-0-10 / i2980 bb-0-0-20 $!`)
   res = Search.begin(round)
   console.log(round.fen, res)
 }
 
-model_tests()
-//tests()
+//model_tests()
+tests()

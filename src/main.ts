@@ -19,7 +19,7 @@ let mc = ['mcts', 'uses mcts', new MCTSPlayer()]
 
 //mashup_players()
 
-//mashup_players([mc, ps[1]])
+mashup_players([mc, ps[1]])
 //xmash(mc, ps[1])
 
 
