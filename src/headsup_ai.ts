@@ -156,11 +156,12 @@ export function one_tournament(p1: Player, p2: Player) {
 
   let res_nb_deals = []
 
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < 10; i++) {
     // swap seats
     seats = [seats[1], seats[0]]
 
     let { nb_deals, winner, stats } = one_match(ps[seats[0]], ps[seats[1]])
+    console.log(nb_deals)
     res_nb_deals.push(nb_deals[0])
     if (seats[0] === 0) {
       res_stats[0] = merge(res_stats[0], stats[0])
@@ -267,7 +268,6 @@ export function one_match(p1: Player, p2: Player): MatchResult {
 
   while (!h.winner) {
     if (h.game_dests.deal) {
-
       nb_deals[0]++;
       let { small_blind, button, seats } = h.game!
       if (i++ > 20) {
@@ -321,7 +321,6 @@ export function one_match(p1: Player, p2: Player): MatchResult {
 
         let action = players[action_side - 1].act(history.map(_ => _.pov(action_side)), round.pov(action_side), round_dests)
 
-        //console.log(action)
         h.round_act(action)
 
         if (prev_action_fens.length > 4) {

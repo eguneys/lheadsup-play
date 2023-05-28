@@ -19,8 +19,8 @@ let mc = ['mcts', 'uses mcts', new MCTSPlayer()]
 
 //mashup_players()
 
-mashup_players([mc, ps[0]])
-//xmash(players[1], players[0])
+//mashup_players([mc, ps[1]])
+//xmash(mc, ps[1])
 
 
 function colorize(color: number, output: string) {
@@ -79,6 +79,8 @@ function xmash(p1: any, p2: any) {
     let even = mash_res.even.join('\n')
     let edge = mash_res.edge.join('\n')
 
+    console.log(mash_res.header)
+    console.log(mash_res.more_stats)
     if (domination !== '') {
       console.log(`domination\n${domination}`)
     }
