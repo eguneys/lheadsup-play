@@ -202,6 +202,7 @@ in this example player 1 has went allin player 2 has folded and player 1 has won
 
 this model is the terminal situation for one round of playing cards.
 the headsup match starts with each 3000 stack blinds 10-20 and blinds increase every 10 hands by 25 chips
+my current goal is to dominate against some simple strategies like going all in every hand and raising minimum every hand. for this i run a tournament simulation that lasts for 10 matches.
 
 
 I've tried various formulas but I couldn't get the player to play reasonably well.
