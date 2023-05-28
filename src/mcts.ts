@@ -211,6 +211,7 @@ some considerations that might help:
 
 something to force the player to play his strong hands and get maximum value
 something to prevent the player risking more than his hand strength
+something to prevent the player folding to small raises even when his hand strength is low.
 
 here are some specific comparisons, that I am not exactly sure how to compare:
 
@@ -227,6 +228,9 @@ the stacks and wins are equal except the hand strength is different.
   sb h0.5 s500 s4500 1000-1
 player 1's stack is equal in each case after winning, but in first case player 1 risked less
 
+  sb h0.8 s0    s0    6000-12
+  sb h0.5 f3000 w2900 100-2
+a case between going allin with a good hand vs folding a decent hand
 
 one drawback with my model is, in a win-fold situation i can't decide how much a player won from opponent's stack, 
 
