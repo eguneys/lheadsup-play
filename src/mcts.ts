@@ -134,25 +134,115 @@ function model_value(round: RoundNPov) {
 
   let strength = ehs(round.stacks[0].hand!, middle)
 
-  let stack_risk_factor = (safe_stack / 3000) -1
-
-  let fold_win_factor = foldwins[0] / 6000
-  let fold_loss_factor = - (foldwins[1] / 6000)
-  let showdown_factor = showdown_value / 6000
-
-  let strength_showdown_equity = - Math.abs(strength - showdown_factor)
-
-  let strength_fold_win_equity = fold_win_factor - strength
-
-  let strength_fold_loss_equity = 1 - Math.abs(strength - fold_loss_factor)
+  let stack = safe_stack + (showdown_value / 6000) * strength + foldwins[0] / 6000
 
   /*
-  w2990 f2980 30-1
-  w0    f2980 3020-1
-  f2990 w2980 30-2
-  s2980 s2980 40-12
-  s0    s0    6000-12
+
+  sb h0.5 w1000 f4000 1000-1
+  sb h0.5 s1000 s4000 1000-12
+
+  sb h0.5 w4000 f1000 1000-1
+  sb h0.8 w4000 f1000 1000-1
+
+  sb h0.1 w2990 f2980 30-1
+  sb h0.5 w2990 f2980 30-1
+
+  sb h0.8 s0    s0    6000-12
+  sb h0.8 w2990 f2980 30-1
+
+  sb h0.8 s2980 s2980 40-12
+
+  sb h0.1 w0    f2980 3020-1
+  sb h0.5 w0    f2980 3020-1
+  sb h0.8 w0    f2980 3020-1
+
+  sb h0.1 s2980 s2980 40-12
+  sb h0.5 s2980 s2980 40-12
+
+  sb h0.8 f2990 w2980 30-2
+  sb h0.5 f2990 w2980 30-2
+  sb h0.1 f2990 w2980 30-2
+
+  sb h0.5 s0    s0    6000-12
+  sb h0.1 s0    s0    6000-12
+
+  sb h0.8 f3000    w3000
+  sb h0.5 f3000    w3000
+  sb h0.5 s0    s0    6000-12
  */
+
+/*
+I am trying to estimate the value of poker situations for texas hold'em headsup poker between two players. My model looks like this
+
+  sb h0.5 s0    s0    6000-12
+
+ sb = small blind (in chips)
+ h  = hand strength (0-1 range)
+ s0 = (s means showdown) our stack (in chips)
+ s0 = (s means showdown) opponent's stack (in chips)
+ 6000-12 = 6000 pot (in chips) 12 means (1 and 2) meaning player 1 and player 2 is in the pot
+
+ so this means both went allin for a showdown
+
+
+another situation is:
+
+ sb h0.8 w2990 f2980 30-1
+
+ w means win and f means fold
+ 30-1 means there's 30 in the pot which player 1 has won
+
+so in this case player 2 has folded and player 1 won the pot
+
+one more example:
+
+  sb h0.1 w0    f2980 3020-1
+
+in this example player 1 has went allin player 2 has folded and player 1 has won the pot 3020 in chips
+
+this model is the terminal situation for one round of playing cards.
+the headsup match starts with each 3000 stack blinds 10-20 and blinds increase every 10 hands by 25 chips
+
+
+I've tried various formulas but I couldn't get the player to play reasonably well.
+
+some considerations that might help:
+
+something to force the player to play his strong hands and get maximum value
+something to prevent the player risking more than his hand strength
+
+here are some specific comparisons, that I am not exactly sure how to compare:
+
+  sb h0.5 w1000 f4500 500-1
+  sb h0.5 s1000 s4000 1000-12
+first case wins 1000 uncontested, second case wins 500 half of the time.
+
+  sb h0.5 w4000 f1000 1000-1
+  sb h0.8 w4000 f1000 1000-1
+the stacks and wins are equal except the hand strength is different.
+
+
+  sb h0.5 w1000 f4500 500-1
+  sb h0.5 s500 s4500 1000-1
+player 1's stack is equal in each case after winning, but in first case player 1 risked less
+
+
+one drawback with my model is, in a win-fold situation i can't decide how much a player won from opponent's stack, 
+
+for example i cant differentiate these two scenarios
+
+player 1 bet 300 and player 2 folds
+  sb h0.5 w700 f4000 300-1
+or
+player 1 bet 100 player 2 calls player 1 bet 100 more model can look exactly the same
+  sb h0.5 w700 f4000 300-1
+
+the difference is the starting stacks but i don't have that information. one solution is to include the starting stacks in the model, but I am not sure if this is relevant or makes any difference.
+
+
+finally I am not considering advanced factors like slow playing or bluffing based on previous round history. Just looking for a game theory optimal player that plays based on odds.
+
+*/
 
 
   let res = (stack_risk_factor + strength_fold_win_equity + strength_showdown_equity + strength_fold_loss_equity) / 4
