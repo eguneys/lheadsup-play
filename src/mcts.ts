@@ -110,6 +110,9 @@ console.log(ehs(['Ac', 'Ad'], []))
 //
 //console.log(ehs(['2s', '4h'], ['Td','Tc','6h','Qs']))
 // console.log(ehs(['9s', '3c'], ['8s','Td','6s','Ah']))
+console.log(ehs(['Qs', 'Qc'], []))
+console.log(ehs(['As', 'Kc'], []))
+console.log(ehs(['As', 'Ks'], []))
 
 function model_value(round: RoundNPov) {
   let { small_blind, pot, middle } = round
@@ -140,16 +143,19 @@ function model_value(round: RoundNPov) {
 
   let strength = ehs(round.stacks[0].hand!, middle)
 
-  let [r, a, b, c, d] = [0.05, 0.25, 0.2, 0.2, 0.3]
+  let [r, a, b, c, d] = [0.05, 0.27, 0.18, 0.2, 0.3]
   
-  let policy = ((strength - 0.5) / 0.5) * 0.15
+  //let policy = ((strength - 0.5) / 0.5) * 0.12
+  let policy = ((strength - 0.5) / 0.5) * 0.2
 
   a -= policy
   b += policy
 
+  //console.log(strength, a, b, policy)
   const se = (n: number) => (n / 3000) - 1
   let res = r * reveal_factor + a * se(safe_stack) + b * (showdown_value / 6000) * strength - c * se(round.stacks[1].stack) + d * ((foldwins[0] > 2000 ? 0 : foldwins[0])/ 6000)
 
+  //console.log(round.fen, res, reveal_factor, se(safe_stack), (showdown_value / 6000) * strength, se(round.stacks[1].stack), foldwins[0])
   if (round.stacks[0].state === 'w') {
     //console.log(round.fen, res, reveal_factor, safe_stack, showdown_value, strength, foldwins[0])
   }
@@ -689,7 +695,13 @@ function tests() {
   let res,
   round
 
-  round = RoundNPov.from_fen(`10-20 1 | @2884 9s3c check-0 / i2864 raise-0-0-20 $ 232-12 !8sTd6sAh`)
+  round = RoundNPov.from_fen(`85-170 2 | @3366 AdKd call-85-85 / a0 allin-170-0-2294 $!`)
+  res = Search.begin(round)
+  console.log(round.fen, res)
+
+  throw 2;
+
+  round = RoundNPov.from_fen(`10-20 2 | @2652 QsQh call-10-10 / a0 allin-20-0-3308 $!`)
   res = Search.begin(round)
   console.log(round.fen, res)
 
@@ -699,6 +711,18 @@ function tests() {
     res = Search.begin(round)
     console.log(round.fen, res)
   }
+
+
+
+  round = RoundNPov.from_fen(`10-20 1 | @2130 9d5d raise-0-20-340 / i1790 raise-20-340-340 $ 1020-12 !6d5sAs4hJc`)
+  res = Search.begin(round)
+  console.log(round.fen, res)
+
+
+
+  round = RoundNPov.from_fen(`10-20 1 | @2884 9s3c check-0 / i2864 raise-0-0-20 $ 232-12 !8sTd6sAh`)
+  res = Search.begin(round)
+  console.log(round.fen, res)
 
   round = RoundNPov.from_fen(`10-20 1 | @2800 5h4h raise-0-0-160 / i2640 raise-0-160-160 $ 80-12 !TsQdQc`)
   res = Search.begin(round)
@@ -721,4 +745,4 @@ function tests() {
 }
 
 //model_tests()
-tests()
+//tests()
