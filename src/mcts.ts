@@ -284,15 +284,8 @@ function play_move(round: RoundN, move: Move) {
   // skip dealer moves
   while (true) {
     let { dests } = round
-    // dont skip phase
-    if (false && dests.phase) {
+    if (dests.phase) {
       round.act('phase')
-    } else if (dests.win) {
-      round.act('win')
-    } else if (dests.share) {
-      round.act('share')
-    } else if (dests.showdown) {
-      round.act('showdown')
     } else {
       break
       //h.round_act(action)
@@ -374,18 +367,20 @@ class State {
   }
 
   after: RoundNPov
-  after_model: RoundN
   
   constructor(
     readonly before: RoundNPov,
-    readonly before_phase: RoundN,
+    readonly after_model: RoundN,
+    //readonly before_phase: RoundN,
     readonly move?: Move) {
+      /*
       if (before_phase.dests.phase) {
         this.after_model = generate_random_pov_model(before_phase.pov(1))
         this.after_model.act('phase')
       } else {
         this.after_model = before_phase
       }
+     */
       this.after = this.after_model.pov(1)
     }
 
@@ -423,14 +418,7 @@ class State {
 
         let raises = 
           [min_raise, pot / 3, pot / 2, pot, pot * 1.2, pot * 2, stack].map(_ => Math.floor(_)).filter(_ => _ <= stack && _ >= min_raise)
-        raises = [...new Set(raises)]
         raises = removeCloseNumbers(raises, min_raise)
-        for (let i = 0; i < raises.length; i++) {
-          for (let j = 0; j < raises.length; j++) {
-            let x = raises[i],
-              y = raises[j]
-          }
-        }
 
         res.push(...raises.map(raise => `raise ${match}-${raise}`))
       }
@@ -659,7 +647,7 @@ export class Search {
       this.backpropagate(selected_node, value)
 
       //console.log(nb_iterations, selected_node.visits, selected_node.values, moves_to_node.join(' '))
-      if (nb_iterations++ > 200) {
+      if (nb_iterations++ > 50) {
         break
       }
     }

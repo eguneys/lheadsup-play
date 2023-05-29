@@ -2,6 +2,8 @@ import { self_play } from './hand_eval'
 import { MCTSPlayer } from './mcts'
 import { sum, avg_stats_fen, RandomMixPlayer, MaxRaiser, MinRaiser, Caller, Folder, one_tournament } from './headsup_ai'
 
+let mc = ['mcts', 'uses mcts', new MCTSPlayer()]
+
 let ps = [
   ['max_raiser', 'always raises maximum', MaxRaiser.make()],
   ['min_raiser', 'always raises minimum', MinRaiser.make()],
@@ -15,11 +17,11 @@ let ps = [
   ])]
 ]
 
-let mc = ['mcts', 'uses mcts', new MCTSPlayer()]
 
-//mashup_players()
+//mashup_players([...ps, mc])
 
-mashup_players([mc, ps[2]])
+mashup_players([ps[0], ps[2]])
+//mashup_players([mc, ps[2]])
 //xmash(mc, ps[1])
 
 
