@@ -64,15 +64,13 @@ function filter_legal_moves_no_fold_if_check(a: Move[]) {
 }
 
 let cache: any = {}
-function ehs(hand: Card[], board: Card[]) {
-  let nb = 100
+export function ehs(hand: Card[], board: Card[]) {
+  let nb = 50
   let ahead = 0
 
-  if (board.length === 0) {
-    let i = cache[hand.join('')]
-    if (i) {
-      return i
-    }
+  let i = cache[hand.join('') + board.join('')]
+  if (i) {
+    return i
   }
 
   for (let i = 0; i < nb; i++) {
@@ -88,9 +86,7 @@ function ehs(hand: Card[], board: Card[]) {
   }
   let res = ahead / nb
 
-  if (board.length === 0) {
-    cache[hand.join('')] = res
-  }
+  cache[hand.join('') + board.join('')] = res
   return res
 }
 

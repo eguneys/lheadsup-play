@@ -20,8 +20,8 @@ let ps = [
 
 //mashup_players([...ps, mc])
 
-mashup_players([ps[0], ps[2]])
-//mashup_players([mc, ps[2]])
+//mashup_players([ps[0], ps[2]])
+mashup_players([mc, ps[2]])
 //xmash(mc, ps[1])
 
 
