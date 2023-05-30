@@ -64,12 +64,12 @@ function filter_legal_moves_no_fold_if_check(a: Move[]) {
 }
 
 let cache: any = {}
-export function ehs(hand: Card[], board: Card[]) {
-  let nb = 50
+
+export function ehs(hand: Card[], board: Card[], nb = 50, use_cache = true) {
   let ahead = 0
 
   let i = cache[hand.join('') + board.join('')]
-  if (i) {
+  if (use_cache && i) {
     return i
   }
 
@@ -86,7 +86,9 @@ export function ehs(hand: Card[], board: Card[]) {
   }
   let res = ahead / nb
 
-  cache[hand.join('') + board.join('')] = res
+  if (use_cache) {
+    cache[hand.join('') + board.join('')] = res
+  }
   return res
 }
 
@@ -106,9 +108,9 @@ console.log(ehs(['Ac', 'Ad'], []))
 //
 //console.log(ehs(['2s', '4h'], ['Td','Tc','6h','Qs']))
 // console.log(ehs(['9s', '3c'], ['8s','Td','6s','Ah']))
-console.log(ehs(['Qs', 'Qc'], []))
-console.log(ehs(['As', 'Kc'], []))
-console.log(ehs(['As', 'Ks'], []))
+//console.log(ehs(['Qs', 'Qc'], []))
+//console.log(ehs(['As', 'Kc'], []))
+//console.log(ehs(['As', 'Ks'], []))
 
 function model_value(round: RoundNPov) {
   let { small_blind, pot, middle } = round
