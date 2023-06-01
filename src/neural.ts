@@ -2,29 +2,52 @@ import * as tf from '@tensorflow/tfjs'
 import zlib from 'node:zlib'
 import fs from 'fs'
 
-const kInputPlanes = 8
+type InputPlanes = number[]
+
+const kInputPlanes = 15
 
 type Input = tf.SymbolicTensor
+
+function MakeResidualBlock(
+  input: Input,
+  channels: number,
+  weights: Residual,
+  basename: string) {
+
+    let block1 = MakeConvBlock(input, 3, channels, channels,
+                               weights.conv1, basename + "/conv1")
+
+    let block2 = MakeConvBlock(block1, 3, channels, channels,
+                               weights.conv2, basename + "/conv2")
+
+
+    return tf.layers.reLU({ trainable: false })
+    .apply(tf.layers.add().apply([input, block2])) as tf.SymbolicTensor
+
+  }
+
 
 function MakeConvBlock(
   input: Input,
   channels: number,
   input_channels: number, 
   output_channels: number, 
-  weights: any, basename: string): tf.SymbolicTensor {
+  weights: ConvBlock, basename: string): tf.SymbolicTensor {
     const kDataFormat = "NHWC"
 
+
+    // channels 3 input_channels 11 output_channels 64
+    //
     let w_conv = tf.tensor4d(weights.weights, [channels, channels, input_channels, output_channels], 'float32')
 
-    //let conv2d = tf.conv2d(input, w_conv, [1, 1], "same", kDataFormat)
-    
     let conv2d = tf.layers.conv2d({
-      filters: channels,
+      filters: output_channels,
       kernelSize: channels,
       strides: [1, 1],
       padding: 'same',
       dataFormat: 'channelsLast',
       dilationRate: [1, 1],
+      activation: 'relu',
       useBias: false,
       weights: [w_conv]
     }).apply(input) as tf.SymbolicTensor
@@ -34,23 +57,40 @@ function MakeConvBlock(
 
 function MakeNetwork(input: Input, weights: WeightsLegacy) {
 
-  let kInputPlanes = 3
-  let filters = 30
+  let filters = 64
 
   let flow = MakeConvBlock(input, 3, kInputPlanes, filters, weights.input, "input/conv")
 
+  weights.residual.forEach((block, i) =>
+                           flow = MakeResidualBlock(flow, filters, block,
+                                                    `block_${i}`))
+
   let conv_val = MakeConvBlock(flow, 1, filters, 32, weights.value, "value/conv")
 
+  conv_val = tf.layers.flatten().apply(conv_val) as tf.SymbolicTensor
+
+  let ip1_val_w = tf.tensor(weights.ip1_val_w, [8 * 32, 128])
+  let ip1_val_b = tf.tensor(weights.ip1_val_b, [128])
+
+  let value_flow = tf.layers.dense({
+    units: 128,
+    activation: 'relu',
+    useBias: true,
+    weights: [ip1_val_w, ip1_val_b],
+    trainable: false
+  }).apply(conv_val) as tf.SymbolicTensor
+
   let ip2_val_w = tf.tensor(weights.ip2_val_w, [128, 1])
+  let ip2_val_b = tf.tensor(weights.ip2_val_b, [1])
+
   let value_head = tf.layers.dense({
     units: 1,
     activation: 'tanh',
     useBias: true,
-    biasInitializer: tf.initializers.constant({ value: 0 }),
-    //kernelRegularizer: l2reg
-    weights: [ip2_val_w],
-    name: 'value/out'
-  }).apply(conv_val) as tf.SymbolicTensor
+    weights: [ip2_val_w, ip2_val_b],
+    name: 'value/out',
+    trainable: false
+  }).apply(value_flow) as tf.SymbolicTensor
 
   let model = tf.model({ inputs: input, outputs: value_head })
   return model
@@ -61,24 +101,28 @@ function MakeNetwork(input: Input, weights: WeightsLegacy) {
 class NetworkComputation {
 
   input!: tf.Tensor
-  output: any
+  output!: any
+
+  raw_input: InputPlanes[] = []
 
   constructor(readonly network: Network) {
   }
 
-  get value_head() {
-    return this.output[0]
-  }
-
-  AddInput(input: any) {
+  AddInput(input: InputPlanes) {
+    this.raw_input.push(input)
   }
 
   PrepareInput() {
+    let shape = [this.raw_input.length, 1, 8, kInputPlanes]
+    let values: number[] = []
+    this.raw_input.forEach(sample =>
+                           values.push(...sample))
+    this.input = tf.tensor(values, shape)
   }
 
-  ComputeAsync() {
+  async ComputeAsync() {
     this.PrepareInput()
-    this.network.Compute(this.input)
+    this.output = await (this.network.Compute(this.input) as tf.Tensor).array()
   }
 
   GetBatchSize() {
@@ -146,14 +190,18 @@ function parse_weights_json(buffer: Buffer): WeightsLegacy {
     let decodedString = atob(l.params)
 
     const arrayBuffer = new ArrayBuffer(decodedString.length);
+    const uint8Array = new Uint8Array(arrayBuffer)
     const uint16Array = new Uint16Array(arrayBuffer);
 
     for (let i = 0; i < decodedString.length; i++) {
-        uint16Array[i] = decodedString.charCodeAt(i);
+        uint8Array[i] = decodedString.charCodeAt(i);
     }
 
     let params = Array.from(uint16Array)
 
+
+    let range = max_val - min_val
+    params = params.map(_ => _ / (0xffff) * range + min_val)
 
     return params
   }
@@ -195,14 +243,22 @@ export class Network {
   model!: tf.LayersModel
 
   async init() {
-    let weights = await load_weights_from_file('networks/ehs1-0.json.gz')
+    let weights = await load_weights_from_file('networks/ehs1-140.json.gz')
 
-    let input = tf.input({ shape: [null, 8, 8, kInputPlanes], dtype: 'float32', name: 'input_planes'})
+    let input = tf.input({ shape: [1, 8, kInputPlanes], dtype: 'float32', name: 'input_planes'})
     this.model = MakeNetwork(input, weights)
+
+
+    let fake_request = this.new_computation()
+    fake_request.AddInput(Array(kInputPlanes * 8).fill(0))
+    fake_request.AddInput(Array(kInputPlanes * 8).fill(1))
+    fake_request.AddInput(Array(kInputPlanes * 8).fill(0))
+    await fake_request.ComputeAsync()
+    console.log(fake_request.output)
   }
 
 
-  net_computation() {
+  new_computation() {
     return new NetworkComputation(this)
   }
 
@@ -213,5 +269,4 @@ export class Network {
 }
 
 let network = new Network()
-network.init()
-
+await network.init()
