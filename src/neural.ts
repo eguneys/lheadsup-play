@@ -115,8 +115,16 @@ class NetworkComputation {
   PrepareInput() {
     let shape = [this.raw_input.length, 1, 8, kInputPlanes]
     let values: number[] = []
-    this.raw_input.forEach(sample =>
-                           values.push(...sample))
+    this.raw_input.forEach(sample => {
+      const buffer = new Uint8Array(sample)
+      for (let i = 0; i < buffer.length; i++) {
+        const byte = buffer[i]
+        for (let j = 0; j < 8; j++) {
+          const bit = (byte >> j) & 1
+          values.push(bit)
+        }
+      }
+    })
     this.input = tf.tensor(values, shape)
   }
 
@@ -250,11 +258,8 @@ export class Network {
 
 
     let fake_request = this.new_computation()
-    fake_request.AddInput(Array(kInputPlanes * 8).fill(0))
-    fake_request.AddInput(Array(kInputPlanes * 8).fill(1))
-    fake_request.AddInput(Array(kInputPlanes * 8).fill(0))
+    fake_request.AddInput(Array(kInputPlanes))
     await fake_request.ComputeAsync()
-    console.log(fake_request.output)
   }
 
 
@@ -270,3 +275,4 @@ export class Network {
 
 let network = new Network()
 await network.init()
+export { network }

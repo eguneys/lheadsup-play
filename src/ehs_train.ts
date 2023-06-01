@@ -33,8 +33,8 @@ type TrainingData = {
 }
 
 const suits = 'hdsc'
-const ranks = '23456789TJQKA'
-const encode_suit: Record<string, number> = {
+export const ranks = '23456789TJQKA'
+export const encode_suit: Record<string, number> = {
   'h': 0b0001,
   's': 0b0010,
   'd': 0b0100,
