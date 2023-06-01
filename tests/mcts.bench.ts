@@ -1,7 +1,7 @@
 import { it, expect, bench } from 'vitest'
 import { split_cards, make_deal } from 'lheadsup'
 import { ehs } from '../src/mcts'
-import { network } from '../src/neural'
+import { EncodeCardsForNN, network } from '../src/neural'
 
 
 bench('preflop', () => {
@@ -16,8 +16,11 @@ bench('flop', () => {
 
 
 bench('preflop neural', async () => {
-  let computation = network.new_computation()
+  let cards = split_cards(7, make_deal(2))
+  let hand = cards.slice(0, 2)
+  let board: Card[] = []
 
-  computation.AddInput(Array(15 * 8))
+  let computation = network.new_computation()
+  computation.AddInput(EncodeCardsForNN(hand, board))
   await computation.ComputeAsync()
 }, { iterations: 500 })

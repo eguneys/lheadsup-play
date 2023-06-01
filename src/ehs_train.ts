@@ -4,7 +4,7 @@ import zlib from 'node:zlib'
 import { ehs } from './mcts'
 import { Card, make_deal, split_cards } from 'lheadsup'
 
-function card_sort(a: Card, b: Card) {
+export function card_sort(a: Card, b: Card) {
   if (a[1] === b[1]) {
     if (a[0] === b[0]) {
       return 0

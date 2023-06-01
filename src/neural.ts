@@ -1,6 +1,33 @@
 import * as tf from '@tensorflow/tfjs'
 import zlib from 'node:zlib'
 import fs from 'fs'
+import { encode_suit, ranks, card_sort } from './ehs_train'
+
+
+export function EncodeCardsForNN(hand: Card[], board: Card[]) {
+  hand.sort(card_sort)
+  board.sort(card_sort)
+  let res = []
+  for (let i = 0; i < 2; i++) {
+    let [rank, suit] = hand[i]
+    res[i * 2 + 0] = encode_suit[suit]
+    res[i * 2 + 1] = ranks.indexOf(rank) + 1
+  }
+  for (let i = 0; i < 5; i++) {
+    let card = board[i]
+    if (card) {
+      let [rank, suit] = card
+      res[2 * 2 + i * 2 + 0] = encode_suit[suit]
+      res[2 * 2 + i * 2 + 1] = ranks.indexOf(rank) + 1
+    }
+  }
+
+  res[2 * 7] = 0xffffffff
+
+  return res
+}
+
+
 
 type InputPlanes = number[]
 
@@ -18,7 +45,7 @@ function MakeResidualBlock(
                                weights.conv1, basename + "/conv1")
 
     let block2 = MakeConvBlock(block1, 3, channels, channels,
-                               weights.conv2, basename + "/conv2")
+                               weights.conv2, basename + "/conv2", false)
 
 
     return tf.layers.reLU({ trainable: false })
@@ -32,13 +59,12 @@ function MakeConvBlock(
   channels: number,
   input_channels: number, 
   output_channels: number, 
-  weights: ConvBlock, basename: string): tf.SymbolicTensor {
-    const kDataFormat = "NHWC"
-
-
+  weights: ConvBlock, basename: string, relu = true): tf.SymbolicTensor {
     // channels 3 input_channels 11 output_channels 64
     //
     let w_conv = tf.tensor4d(weights.weights, [channels, channels, input_channels, output_channels], 'float32')
+
+    let activation: any = relu ? 'relu' : undefined
 
     let conv2d = tf.layers.conv2d({
       filters: output_channels,
@@ -47,7 +73,7 @@ function MakeConvBlock(
       padding: 'same',
       dataFormat: 'channelsLast',
       dilationRate: [1, 1],
-      activation: 'relu',
+      activation,
       useBias: false,
       weights: [w_conv]
     }).apply(input) as tf.SymbolicTensor
@@ -113,19 +139,21 @@ class NetworkComputation {
   }
 
   PrepareInput() {
-    let shape = [this.raw_input.length, 1, 8, kInputPlanes]
+    let shape = [this.raw_input.length, kInputPlanes, 8, 1]
     let values: number[] = []
     this.raw_input.forEach(sample => {
       const buffer = new Uint8Array(sample)
       for (let i = 0; i < buffer.length; i++) {
         const byte = buffer[i]
+        let res = []
         for (let j = 0; j < 8; j++) {
           const bit = (byte >> j) & 1
-          values.push(bit)
+          res.unshift(bit)
         }
+        values.push(...res)
       }
     })
-    this.input = tf.tensor(values, shape)
+    this.input = tf.tensor(values, shape).transpose([0, 2, 3, 1])
   }
 
   async ComputeAsync() {
@@ -251,9 +279,9 @@ export class Network {
   model!: tf.LayersModel
 
   async init() {
-    let weights = await load_weights_from_file('networks/ehs1-140.json.gz')
+    let weights = await load_weights_from_file('networks/ehs1-140000.json.gz')
 
-    let input = tf.input({ shape: [1, 8, kInputPlanes], dtype: 'float32', name: 'input_planes'})
+    let input = tf.input({ shape: [8, 1, kInputPlanes], dtype: 'float32', name: 'input_planes'})
     this.model = MakeNetwork(input, weights)
 
 
