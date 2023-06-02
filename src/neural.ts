@@ -1,6 +1,7 @@
 import * as tf from '@tensorflow/tfjs'
 import zlib from 'node:zlib'
 import fs from 'fs'
+import { Card } from 'lheadsup'
 import { encode_suit, ranks, card_sort } from './ehs_train'
 
 

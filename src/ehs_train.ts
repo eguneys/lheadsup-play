@@ -115,8 +115,8 @@ function write_training_data(id: number) {
 
 }
 
-export function ehs_train_main() {
-  for (let i = 0; i < 100; i++) {
+export function ehs_train_main(nb = 100) {
+  for (let i = 0; i < nb; i++) {
     console.log(i)
     write_training_data(i + 1)
   }
