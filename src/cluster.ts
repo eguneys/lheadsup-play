@@ -1,13 +1,13 @@
-import cluster from 'node:cluster'
+import cluster from 'cluster'
 //import { availableParallelism } from 'node:os'
-import process from 'node:process'
+import process from 'process'
 import { cpus } from 'os'
 
 export function parallel_work(work: (nb: number) => void) {
   //const numCPUs = availableParallelism()
   const numCPUs = cpus().length
 
-  if (cluster.isPrimary) {
+  if (cluster.isMaster) {
     console.log(`Primary ${process.pid} is running with ${numCPUs} cpus`)
 
 
