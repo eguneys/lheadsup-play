@@ -279,8 +279,8 @@ export class Network {
 
   model!: tf.LayersModel
 
-  async init() {
-    let weights = await load_weights_from_file('networks/ehs1-140000.json.gz')
+  async init(filename: string) {
+    let weights = await load_weights_from_file(`networks/${filename}.json.gz`)
 
     let input = tf.input({ shape: [8, 1, kInputPlanes], dtype: 'float32', name: 'input_planes'})
     this.model = MakeNetwork(input, weights)
@@ -302,6 +302,8 @@ export class Network {
   }
 }
 
-let network = new Network()
-await network.init()
-export { network }
+let network14 = new Network()
+await network14.init('ehs1-140000')
+let network28 = new Network()
+await network28.init('ehs1-140000')
+export { network14, network28 }

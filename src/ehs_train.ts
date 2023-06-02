@@ -108,17 +108,19 @@ function write_training_data(id: number) {
   let buff = Buffer.alloc(data.length * sample_size)
   data.forEach((sample, i) => write_sample_to_buffer(buff, sample, i * sample_size))
 
-  zlib.gzip(buff, (err, buffer) => {
-    let r = (Math.random() + 1).toString(36).substring(7)
-    fs.writeFile(`data/data_ehs${r}_${id}.gz`, buffer)
+  return new Promise(resolve => {
+    zlib.gzip(buff, (err, buffer) => {
+      let r = (Math.random() + 1).toString(36).substring(7)
+      resolve(fs.writeFile(`data/data_ehs${r}_${id}.gz`, buffer))
+    })
   })
 
 }
 
-export function ehs_train_main(nb = 100) {
+export async function ehs_train_main(nb = 100) {
   for (let i = 0; i < nb; i++) {
     console.log(i)
-    write_training_data(i + 1)
+    await write_training_data(i + 1)
   }
 }
 
