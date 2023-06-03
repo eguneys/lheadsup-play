@@ -14,16 +14,18 @@ export function EncodeCardsForNN(hand: Card[], board: Card[]) {
     res[i * 2 + 0] = encode_suit[suit]
     res[i * 2 + 1] = ranks.indexOf(rank) + 1
   }
+
+  res[2 * 2] = 0xffffffff
   for (let i = 0; i < 5; i++) {
     let card = board[i]
     if (card) {
       let [rank, suit] = card
-      res[2 * 2 + i * 2 + 0] = encode_suit[suit]
-      res[2 * 2 + i * 2 + 1] = ranks.indexOf(rank) + 1
+      res[2 * 2 + 1 +  i * 2 + 0] = encode_suit[suit]
+      res[2 * 2 + 1 + i * 2 + 1] = ranks.indexOf(rank) + 1
     }
   }
 
-  res[2 * 7] = 0xffffffff
+  res[2 * 7 + 1] = 0xffffffff
 
   return res
 }
@@ -32,7 +34,7 @@ export function EncodeCardsForNN(hand: Card[], board: Card[]) {
 
 type InputPlanes = number[]
 
-const kInputPlanes = 15
+const kInputPlanes = 16
 
 type Input = tf.SymbolicTensor
 
@@ -228,6 +230,7 @@ class NetworkComputation {
       }
     })
     this.input = tf.tensor(values, shape).transpose([0, 2, 3, 1])
+    //tf.print(this.input)
   }
 
   async ComputeAsync() {
@@ -396,8 +399,11 @@ export class Network {
   }
 }
 
+let n14_name = 'ehs1_river_3x32_v2-14000'
+let n28_name = 'ehs1_river_3x32_v2-28000'
+
 let network14 = new Network()
-await network14.init('ehs1_river_3x32-364000')
+await network14.init(n14_name)
 let network28 = new Network()
-await network28.init('ehs1_river_3x32-364000')
+await network28.init(n28_name)
 export { network14, network28 }
