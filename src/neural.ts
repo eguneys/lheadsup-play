@@ -36,6 +36,77 @@ const kInputPlanes = 15
 
 type Input = tf.SymbolicTensor
 
+
+/* https://github.com/tensorflow/tfjs/issues/793 */ 
+class ApplySqueezeExcite extends tf.layers.Layer {
+
+  reshapeSize!: number
+
+  build(inputShape: tf.Shape[]) {
+    super.build(inputShape)
+
+    this.reshapeSize = inputShape[1][1]!
+  }
+
+  computeOutputShape(inputShape: tf.Shape[]) {
+    return [inputShape[1][1]!]
+  }
+
+  call(inputs: tf.Tensor[], kwargs: any) {
+    this.invokeCallHook(inputs, kwargs)
+
+    const [x, excited] = inputs //tf.unstack(inputs);
+
+    return tf.tidy(() => {
+      let [gammas, betas] = tf.split(tf.reshape(excited, [-1, 1, 1, this.reshapeSize]),
+                                     2, 3)
+
+      return tf.sigmoid(gammas).mul(x).add(betas)
+    })
+  }
+
+  static get className() {
+    return 'SqueezeAndExcite'
+  }
+}
+
+
+function SqueezeAndExcite(input: Input, 
+                          channels: number, 
+                          weights: SEUnit, 
+                          basename: string): tf.SymbolicTensor {
+    const se_channels = weights.b1.length
+
+    let pooled = tf.layers.globalAveragePooling2d({
+      dataFormat: 'channelsLast',
+      name: basename + '/pooled',
+      trainable: false
+    }).apply(input)
+
+    let w1 = tf.tensor(weights.w1, [channels, se_channels])
+    let b1 = tf.tensor(weights.b1, [se_channels])
+
+    let squeezed = tf.layers.dense({
+      units: se_channels,
+      activation: 'relu',
+      useBias: true,
+      weights: [w1, b1],
+      trainable: false
+    }).apply(pooled) as tf.SymbolicTensor
+
+    let w2 = tf.tensor(weights.w2, [se_channels, 2 * channels])
+    let b2 = tf.tensor(weights.b2, [2 * channels])
+
+    let excited = tf.layers.dense({
+      units: 2 * channels,
+      useBias: true,
+      weights: [w2, b2],
+      trainable: false
+    }).apply(squeezed) as tf.SymbolicTensor
+
+    return new ApplySqueezeExcite().apply([input, excited]) as tf.SymbolicTensor
+}
+
 function MakeResidualBlock(
   input: Input,
   channels: number,
@@ -48,6 +119,7 @@ function MakeResidualBlock(
     let block2 = MakeConvBlock(block1, 3, channels, channels,
                                weights.conv2, basename + "/conv2", false)
 
+    block2 = SqueezeAndExcite(block2, channels, weights.se, basename + "/se")
 
     return tf.layers.reLU({ trainable: false })
     .apply(tf.layers.add().apply([input, block2])) as tf.SymbolicTensor
@@ -201,9 +273,17 @@ type Layer = {
 
 type Layer = number[]
 
+type SEUnit = {
+  w1: Layer,
+  b1: Layer,
+  w2: Layer,
+  b2: Layer
+}
+
 type Residual = {
   conv1: ConvBlock,
-  conv2: ConvBlock
+  conv2: ConvBlock,
+  se: SEUnit
 }
 type ConvBlock = {
   weights: Layer
@@ -250,8 +330,21 @@ function parse_weights_json(buffer: Buffer): WeightsLegacy {
     }
   }
 
+  function parse_se(s: any) {
+    return {
+      w1: parse_layer(s.w1),
+      b1: parse_layer(s.b1),
+      w2: parse_layer(s.w2),
+      b2: parse_layer(s.b2),
+    }
+  }
+
   function parse_residual(r: any) {
-    return { conv1: parse_conv(r.conv1), conv2: parse_conv(r.conv2) }
+    return { 
+      conv1: parse_conv(r.conv1), 
+      conv2: parse_conv(r.conv2),
+      se: parse_se(r.se)
+    }
   }
 
   let input = parse_conv(weights.input)
@@ -304,7 +397,7 @@ export class Network {
 }
 
 let network14 = new Network()
-await network14.init('ehs1-140000')
+await network14.init('ehs1_river_3x32-364000')
 let network28 = new Network()
-await network28.init('ehs1_192x15-280000')
+await network28.init('ehs1_river_3x32-364000')
 export { network14, network28 }

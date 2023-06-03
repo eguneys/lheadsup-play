@@ -26,6 +26,7 @@ async function acc() {
   let board: Card[] = []
 
 
+  /*
   await acc_hand_board(hand, board)
 
   board = cards.slice(2, 5)
@@ -35,9 +36,10 @@ async function acc() {
   board = cards.slice(2, 6)
 
   await acc_hand_board(hand, board)
+ */
 
+  //board = cards.slice(2, 5)
   board = cards.slice(2, 7)
-
   await acc_hand_board(hand, board)
 }
 
