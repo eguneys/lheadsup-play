@@ -84,7 +84,8 @@ function MakeConvBlock(
 
 function MakeNetwork(input: Input, weights: WeightsLegacy) {
 
-  let filters = 64
+  //let filters = 64
+  let filters = weights.input.weights.length / kInputPlanes / 9
 
   let flow = MakeConvBlock(input, 3, kInputPlanes, filters, weights.input, "input/conv")
 
@@ -305,5 +306,5 @@ export class Network {
 let network14 = new Network()
 await network14.init('ehs1-140000')
 let network28 = new Network()
-await network28.init('ehs1-140000')
+await network28.init('ehs1_192x15-280000')
 export { network14, network28 }

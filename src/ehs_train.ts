@@ -55,20 +55,21 @@ function encode_board(hand: Card[], board: Card[]) {
 }
 
 
-function gen_ehs() {
+function gen_ehs(fixed_phase?: number) {
   let cards = split_cards(7, make_deal(2))
 
   let hand = cards.slice(0, 2)
   let board = cards.slice(2, 7)
 
-  let phase = Math.floor(Math.random() * 4)
+  let phase = fixed_phase ?? Math.floor(Math.random() * 4) + 1
 
-  if (phase === 0) {
+  if (phase === 1) {
     board = []
-  } else if (phase === 1) {
-    board.splice(3)
   } else if (phase === 2) {
+    board.splice(3)
+  } else if (phase === 3) {
     board.splice(4)
+  } else {
   }
 
   let _ = hand.join('') + board.join('')
@@ -85,10 +86,10 @@ function gen_ehs() {
   }
 }
 
-function gen_training_data() {
+function gen_training_data(fixed_phase?: number) {
   let res = []
   for (let i = 0; i < 10000; i++) {
-    let data = gen_ehs()
+    let data = gen_ehs(fixed_phase)
     res.push(data)
   }
   return res
@@ -102,8 +103,8 @@ function write_sample_to_buffer(buff: Buffer, sample: TrainingData, offset: numb
 }
 
 let sample_size = 7 * 2 + 4
-function write_training_data(id: number) {
-  let data = gen_training_data()
+function write_training_data(id: number, fixed_phase?: number) {
+  let data = gen_training_data(fixed_phase)
 
   let buff = Buffer.alloc(data.length * sample_size)
   data.forEach((sample, i) => write_sample_to_buffer(buff, sample, i * sample_size))
@@ -117,10 +118,10 @@ function write_training_data(id: number) {
 
 }
 
-export async function ehs_train_main(nb = 100) {
+export async function ehs_train_main(nb = 100, fixed_phase?: number) {
   for (let i = 0; i < nb; i++) {
     console.log(i)
-    await write_training_data(i + 1)
+    await write_training_data(i + 1, fixed_phase)
   }
 }
 
