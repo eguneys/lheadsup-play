@@ -2,7 +2,11 @@ import fs from 'fs/promises'
 import zlib from 'node:zlib'
 
 import { ehs } from './mcts'
-import { Card, make_deal, split_cards } from 'lheadsup'
+import { hand_rank, Card, make_deal, split_cards } from 'lheadsup'
+
+function avg(a: number[]) {
+  return a.reduce((a, b) => a + b, 0) / a.length
+}
 
 export function card_sort(a: Card, b: Card) {
   if (a[1] === b[1]) {
@@ -54,8 +58,7 @@ function encode_board(hand: Card[], board: Card[]) {
   return res
 }
 
-
-function gen_ehs(fixed_phase?: number) {
+function gen_h_b(fixed_phase?: number) {
   let cards = split_cards(7, make_deal(2))
 
   let hand = cards.slice(0, 2)
@@ -75,6 +78,15 @@ function gen_ehs(fixed_phase?: number) {
   let _ = hand.join('') + board.join('')
   hand.sort(card_sort)
   board.sort(card_sort)
+
+  return [hand, board]
+}
+
+
+
+function gen_ehs(fixed_phase?: number) {
+
+  let [hand, board] = gen_h_b(fixed_phase)
 
   let e_board = encode_board(hand, board)
 
@@ -125,6 +137,75 @@ export async function ehs_train_main(nb = 100, fixed_phase?: number) {
   }
 }
 
+
+class Metric {
+
+  values: number[] = []
+  longs: string[] = []
+
+  constructor(readonly bucket: string) {}
+
+  add(value: number, long: string) {
+    this.values.push(value)
+    this.longs.push(long)
+  }
+
+  get value() {
+    return avg(this.values)
+  }
+
+  get fen() {
+    return `${this.value.toFixed(2)} ${this.bucket} ${this.values.map(_ => _.toFixed(2)).join(' ')} ${this.longs.join(' ')}`
+  }
+}
+
+export function ehs_train_stats() {
+  /*
+  let a = `Kh8hKdAdKc9c7c` 
+  let b = `Kh9hKsKcAc8c5c`
+
+  let as = split_cards(7, a)
+  let bs = split_cards(7, b)
+
+  let st_a = ehs(as.slice(0, 2), as.slice(2), 1000, false)
+  let st_b = ehs(bs.slice(0, 2), bs.slice(2), 1000, false)
+
+  console.log(a, st_a)
+  console.log(b, st_b)
+
+  return
+
+ */
+
+
+  let data = []
+  let batch_size = 64
+
+  for (let i = 0; i < batch_size; i++) {
+    let [hand, board] = gen_h_b(4)
+
+    let rank = hand_rank([...hand, ...board])
+    let bucket = rank.fen!.split(' ').slice(0, 3).join('')
+
+    let strength = ehs(hand, board, 1000, false)
+
+    data.push([bucket, strength, [...hand, ...board].join('')])
+  }
+
+  let metrics: Metric[] = []
+
+
+  data.forEach(([bucket, strength, long]) => {
+    let metric = metrics.find(_ => _.bucket === bucket) 
+    if (!metric) {
+      metric = new Metric(bucket)
+      metrics.push(metric)
+    }
+    metric.add(strength, long)
+  })
+
+  console.log(metrics.sort((a, b) => b.value - a.value).map(_ => _.fen))
+}
 
 
 function sum(a: number[]) { return a.reduce((a, b) => a + b, 0) }

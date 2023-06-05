@@ -4,6 +4,50 @@ import fs from 'fs'
 import { Card } from 'lheadsup'
 import { encode_suit, ranks, card_sort } from './ehs_train'
 
+const kEpsilon = 0.00001
+
+// [[[0, 1, 2, 3], [4, 5, 6, 7]]]
+//console.log(TransposeTensor([0, 1, 2, 3, 4, 5, 6, 7], [1, 2, 4], [2, 1, 0]))
+function TransposeTensor(from: number[], dims: number[], order: number[] = []) {
+  if (from.length !== dims.reduce((a, b) => a * b, 1)) {
+    throw 'Dimensions doesnt match'
+  }
+
+  if (order.length === 0) {
+    for (let i = 0; i < dims.length; i++) {
+      order.unshift(dims.length - i - 1)
+    }
+  }
+
+  let to = []
+  let cur_idx = Array(dims.length).fill(0)
+  for (let _ = 0; _ < from.length; _++) {
+    let from_idx = 0
+    order.forEach(i => {
+      from_idx *= dims[i]
+      from_idx += cur_idx[i]
+    })
+    to.push(from[from_idx])
+    for(let i = dims.length - 1; i >= 0; i--) {
+      if (++cur_idx[i] === dims[i]) {
+        cur_idx[i] = 0
+      } else {
+        break
+      }
+    }
+  }
+  return to
+}
+
+
+function MakeConst(shape: number[],
+                   values: number[],
+                   order?: number[]) {
+                     let dims = shape
+                     values = TransposeTensor(values, dims, order)
+                     return tf.tensor(values, shape)
+                   }
+
 
 export function EncodeCardsForNN(hand: Card[], board: Card[]) {
   hand.sort(card_sort)
@@ -57,7 +101,7 @@ class ApplySqueezeExcite extends tf.layers.Layer {
   call(inputs: tf.Tensor[], kwargs: any) {
     this.invokeCallHook(inputs, kwargs)
 
-    const [x, excited] = inputs //tf.unstack(inputs);
+    const [x, excited] = inputs
 
     return tf.tidy(() => {
       let [gammas, betas] = tf.split(tf.reshape(excited, [-1, 1, 1, this.reshapeSize]),
@@ -109,6 +153,26 @@ function SqueezeAndExcite(input: Input,
     return new ApplySqueezeExcite().apply([input, excited]) as tf.SymbolicTensor
 }
 
+function batch_norm(input: Input, name: string, channels: number, weights: BatchNorm, scale: boolean = false) {
+
+  let means = tf.tensor(weights.bn_means, [channels])
+  let stddivs = tf.tensor(weights.bn_stddivs, [channels])
+  let gammas = tf.tensor(weights.bn_gammas, [channels])
+  let betas = tf.tensor(weights.bn_betas, [channels])
+
+  let w = scale ? [gammas, betas, means, stddivs] : [betas, means, stddivs]
+
+  return tf.layers.batchNormalization({
+    axis: 3,
+    epsilon: kEpsilon,
+    center: true,
+    scale,
+    name,
+    trainable: false,
+    weights: w
+  }).apply(input)
+}
+
 function MakeResidualBlock(
   input: Input,
   channels: number,
@@ -119,7 +183,7 @@ function MakeResidualBlock(
                                weights.conv1, basename + "/conv1")
 
     let block2 = MakeConvBlock(block1, 3, channels, channels,
-                               weights.conv2, basename + "/conv2", false)
+                               weights.conv2, basename + "/conv2", false, true)
 
     block2 = SqueezeAndExcite(block2, channels, weights.se, basename + "/se")
 
@@ -134,10 +198,17 @@ function MakeConvBlock(
   channels: number,
   input_channels: number, 
   output_channels: number, 
-  weights: ConvBlock, basename: string, relu = true): tf.SymbolicTensor {
+  weights: ConvBlock, basename: string, relu = true, bn_scale=false): tf.SymbolicTensor {
     // channels 3 input_channels 11 output_channels 64
     //
-    let w_conv = tf.tensor4d(weights.weights, [channels, channels, input_channels, output_channels], 'float32')
+    //let w_conv = tf.tensor(weights.weights, [channels, channels, input_channels, output_channels])
+    //let w_conv = MakeConst(shape, values, order)
+    let w_conv = MakeConst([channels, channels, input_channels, output_channels], weights.weights, [3, 2, 0, 1])
+
+    //let b_conv = weights.biases.length > 0 ? tf.tensor(weights.biases, [output_channels]) : undefined
+
+    //let w = b_conv ? [w_conv, b_conv] : [w_conv]
+    let w = [w_conv]
 
     let activation: any = relu ? 'relu' : undefined
 
@@ -148,12 +219,17 @@ function MakeConvBlock(
       padding: 'same',
       dataFormat: 'channelsLast',
       dilationRate: [1, 1],
-      activation,
       useBias: false,
-      weights: [w_conv]
+      weights: w
     }).apply(input) as tf.SymbolicTensor
 
-    return conv2d
+    //batch_norm(input: Input, name: string, channels: number, weights: BatchNorm, scale: boolean = false)
+    conv2d = batch_norm(conv2d, basename + '/bn', output_channels, weights.bn, bn_scale) as tf.SymbolicTensor
+    if (activation === 'relu') {
+      return tf.layers.reLU({ trainable: false }).apply(conv2d) as tf.SymbolicTensor
+    } else {
+      return conv2d
+    }
   }
 
 function MakeNetwork(input: Input, weights: WeightsLegacy) {
@@ -161,7 +237,7 @@ function MakeNetwork(input: Input, weights: WeightsLegacy) {
   //let filters = 64
   let filters = weights.input.weights.length / kInputPlanes / 9
 
-  let flow = MakeConvBlock(input, 3, kInputPlanes, filters, weights.input, "input/conv")
+  let flow = MakeConvBlock(input, 3, kInputPlanes, filters, weights.input, "input/conv", true, true)
 
   weights.residual.forEach((block, i) =>
                            flow = MakeResidualBlock(flow, filters, block,
@@ -229,8 +305,27 @@ class NetworkComputation {
         values.push(...res)
       }
     })
-    this.input = tf.tensor(values, shape).transpose([0, 2, 3, 1])
-    //tf.print(this.input)
+    if (false) {
+      let ones: number[] = Array(16).fill(1)
+      let zeros: number[] = Array(16).fill(0)
+      let halves: number[] = Array(16).fill(0.5)
+
+      values = [
+        ...zeros,
+        ...zeros,
+        ...zeros,
+        ...zeros,
+        ...zeros,
+        ...zeros,
+        ...zeros,
+        ...zeros
+      ]
+      this.input = tf.tensor(values, [this.raw_input.length, 8, 1, kInputPlanes])
+      tf.print(this.input)
+    } else {
+      this.input = tf.tensor(values, shape).transpose([0, 2, 3, 1])
+      //tf.print(this.input)
+    }
   }
 
   async ComputeAsync() {
@@ -266,14 +361,6 @@ function decompress_gzip(filename: string): Promise<Buffer> {
   })
 }
 
-/*
-type Layer = {
-  min_val: number,
-  max_val: number,
-  params: number[]
-}
-*/
-
 type Layer = number[]
 
 type SEUnit = {
@@ -288,8 +375,18 @@ type Residual = {
   conv2: ConvBlock,
   se: SEUnit
 }
+
+type BatchNorm = {
+  bn_means: Layer,
+  bn_stddivs: Layer,
+  bn_gammas: Layer,
+  bn_betas: Layer
+}
+
 type ConvBlock = {
-  weights: Layer
+  weights: Layer,
+  //biases: Layer,
+  bn: BatchNorm
 }
 type WeightsLegacy = {
   input: ConvBlock,
@@ -328,9 +425,50 @@ function parse_weights_json(buffer: Buffer): WeightsLegacy {
   }
 
   function parse_conv(c: any) {
-    return {
-      weights: parse_layer(c.weights)
+
+    let bn = {
+      bn_means: parse_layer(c.bn_means),
+      bn_gammas: parse_layer(c.bn_gammas),
+      bn_betas: parse_layer(c.bn_betas),
+      bn_stddivs: parse_layer(c.bn_stddivs)
     }
+
+    return {
+      weights: parse_layer(c.weights),
+      bn
+    }
+
+    /*
+    let biases: number[] = []
+    if (false && c.bn_means.params) {
+      let bn_means = parse_layer(c.bn_means)
+      let bn_gammas = parse_layer(c.bn_gammas)
+      let bn_betas = parse_layer(c.bn_betas)
+      let bn_stddivs = parse_layer(c.bn_stddivs)
+      biases = c.biases ? parse_layer(c.biases): bn_means.map(_ => 0)
+
+      bn_stddivs.forEach((std, i) => {
+        bn_gammas[i] *= 1.0 / Math.sqrt(std + kEpsilon)
+        bn_means[i] -= biases[i]
+      })
+
+      let outputs = biases.length
+      let inputs = weights.length / outputs
+
+      for (let o = 0; o < outputs; o++) {
+        for (let c = 0; c < inputs; c++) {
+          weights[o * inputs + c] *= bn_gammas[o]
+        }
+
+        biases[o] = -bn_gammas[o] * bn_means[o] + bn_betas[o]
+      }
+    }
+
+    return {
+      weights,
+      biases
+    }
+   */
   }
 
   function parse_se(s: any) {
@@ -399,11 +537,21 @@ export class Network {
   }
 }
 
-let n14_name = 'ehs1_river_3x32_v2-14000'
-let n28_name = 'ehs1_river_3x32_v2-28000'
+let n14_name = 'ehs1_river_3x32-144000'
+let n28_name = 'ehs1_river_3x32-144000'
 
 let network14 = new Network()
 await network14.init(n14_name)
 let network28 = new Network()
 await network28.init(n28_name)
 export { network14, network28 }
+
+
+if (false) {
+  let computation = network14.new_computation()
+
+  let input = EncodeCardsForNN(['2h', '3c'], ['Qc', 'Jh', '7d', '3s', '4d'])
+  computation.AddInput(input)
+  await computation.ComputeAsync()
+  console.log(computation.output)
+}
