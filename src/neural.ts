@@ -279,7 +279,7 @@ function MakeNetwork(input: Input, weights: WeightsLegacy) {
 class NetworkComputation {
 
   input!: tf.Tensor
-  output!: any
+  output!: [number][]
 
   raw_input: InputPlanes[] = []
 
@@ -330,7 +330,7 @@ class NetworkComputation {
 
   async ComputeAsync() {
     this.PrepareInput()
-    this.output = await (this.network.Compute(this.input) as tf.Tensor).array()
+    this.output = await (this.network.Compute(this.input) as tf.Tensor).array() as [number][]
   }
 
   GetBatchSize() {
@@ -538,7 +538,7 @@ export class Network {
 }
 
 let n14_name = 'ehs1_river_3x32-144000'
-let n28_name = 'ehs1_river_3x32-144000'
+let n28_name = 'ehs1_river_3x32_random-0'
 
 let network14 = new Network()
 await network14.init(n14_name)

@@ -10,7 +10,7 @@ bench('preflop', () => {
   ehs(cards.slice(0, 2), [])
 }, { iterations: 500 })
 
-bench('flop', () => {
+bench('river', () => {
   let cards = split_cards(7, make_deal(2))
   ehs(cards.slice(0, 2), cards.slice(2, 5))
 }, { iterations: 500 })

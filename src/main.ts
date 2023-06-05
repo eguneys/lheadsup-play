@@ -5,7 +5,7 @@ import { test_acc_main } from './ehs_acc_test'
 
 
 //ehs_train_stats()
-test_acc_main(100)
+test_acc_main(5)
 
 function train_main() {
   let phase = 4
