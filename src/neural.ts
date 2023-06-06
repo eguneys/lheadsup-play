@@ -153,8 +153,11 @@ function SqueezeAndExcite(input: Input,
     return new ApplySqueezeExcite().apply([input, excited]) as tf.SymbolicTensor
 }
 
-function batch_norm(input: Input, name: string, channels: number, weights: BatchNorm, scale: boolean = false) {
+function batch_norm(input: Input, name: string, channels: number, weights?: BatchNorm, scale: boolean = false) {
 
+  if (!weights) {
+    return input
+  }
   let means = tf.tensor(weights.bn_means, [channels])
   let stddivs = tf.tensor(weights.bn_stddivs, [channels])
   let gammas = tf.tensor(weights.bn_gammas, [channels])
@@ -387,7 +390,7 @@ type BatchNorm = {
 type ConvBlock = {
   weights: Layer,
   //biases: Layer,
-  bn: BatchNorm
+  bn?: BatchNorm
 }
 type WeightsLegacy = {
   input: ConvBlock,
@@ -426,6 +429,11 @@ function parse_weights_json(buffer: Buffer): WeightsLegacy {
   }
 
   function parse_conv(c: any) {
+    if (!c.bn_means.params) {
+      return {
+        weights: parse_layer(c.weights)
+      }
+    }
 
     let bn = {
       bn_means: parse_layer(c.bn_means),
@@ -538,7 +546,7 @@ export class Network {
   }
 }
 
-let n14_name = 'ehs1_river_3x32-180000'
+let n14_name = 'ehs1_river_3x32_no_batch-0'
 let n28_name = 'ehs1_river_3x32_random-0'
 
 let network14 = new Network()
