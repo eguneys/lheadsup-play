@@ -1,7 +1,7 @@
 import * as tf from '@tensorflow/tfjs'
 import zlib from 'node:zlib'
 import fs from 'fs'
-import { Card } from 'lheadsup'
+import { Card, split_cards } from 'lheadsup'
 import { encode_suit, ranks, card_sort } from './ehs_train'
 
 const kEpsilon = 0.00001
@@ -321,8 +321,9 @@ class NetworkComputation {
         ...zeros
       ]
       this.input = tf.tensor(values, [this.raw_input.length, 8, 1, kInputPlanes])
-      tf.print(this.input)
+      //tf.print(this.input)
     } else {
+      //console.log(values)
       this.input = tf.tensor(values, shape).transpose([0, 2, 3, 1])
       //tf.print(this.input)
     }
@@ -537,7 +538,7 @@ export class Network {
   }
 }
 
-let n14_name = 'ehs1_river_3x32-144000'
+let n14_name = 'ehs1_river_3x32-180000'
 let n28_name = 'ehs1_river_3x32_random-0'
 
 let network14 = new Network()
@@ -554,4 +555,13 @@ if (false) {
   computation.AddInput(input)
   await computation.ComputeAsync()
   console.log(computation.output)
+}
+
+export async function predict_str(hand: string, board: string) {
+  let computation = network14.new_computation()
+
+  let input = EncodeCardsForNN(split_cards(2, hand), split_cards(5, board))
+  computation.AddInput(input)
+  await computation.ComputeAsync()
+  return computation.output
 }

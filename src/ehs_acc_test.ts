@@ -49,7 +49,7 @@ async function acc_batch(batch: [Card[], Card[]][]) {
   let expected = batch.map(([hand, board]) =>  {
     c14.AddInput(EncodeCardsForNN(hand, board))
     c28.AddInput(EncodeCardsForNN(hand, board))
-    return ehs(hand, board)
+    return ehs(hand, board, 50, false)
   })
 
   await Promise.all([c14.ComputeAsync(), c28.ComputeAsync()])
@@ -57,8 +57,8 @@ async function acc_batch(batch: [Card[], Card[]][]) {
   let o14 = c14.output.map(_ => _[0])
   let o28 = c28.output.map(_ => _[0])
 
-  let acc14 = o14.filter((o, i) => Math.abs(expected[i] - o) < 0.1)
-  let acc28 = o28.filter((o, i) => Math.abs(expected[i] - o) < 0.1)
+  let acc14 = o14.filter((o, i) => Math.abs(expected[i] - o) < 0.09)
+  let acc28 = o28.filter((o, i) => Math.abs(expected[i] - o) < 0.09)
 
   console.log((acc14.length / o14.length).toFixed(2), (acc28.length / o28.length).toFixed(2))
 }
