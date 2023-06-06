@@ -546,8 +546,8 @@ export class Network {
   }
 }
 
-let n14_name = 'ehs1_river_3x32_no_batch-0'
-let n28_name = 'ehs1_river_3x32_random-0'
+let n14_name = 'ehs1_river_3x32-252000'
+let n28_name = 'ehs1_river_3x32-252000'
 
 let network14 = new Network()
 await network14.init(n14_name)
@@ -571,5 +571,5 @@ export async function predict_str(hand: string, board: string) {
   let input = EncodeCardsForNN(split_cards(2, hand), split_cards(5, board))
   computation.AddInput(input)
   await computation.ComputeAsync()
-  return computation.output
+  return computation.output[0][0]
 }

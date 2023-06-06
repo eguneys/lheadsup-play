@@ -1,8 +1,11 @@
-import fs from 'fs/promises'
+import fs from 'fs'
 import zlib from 'node:zlib'
+import { decompress_gzip } from './util'
 
 import { ehs } from './mcts'
 import { hand_rank, Card, make_deal, split_cards } from 'lheadsup'
+
+const kSampleNb = 10000
 
 function avg(a: number[]) {
   return a.reduce((a, b) => a + b, 0) / a.length
@@ -45,6 +48,13 @@ export const encode_suit: Record<string, number> = {
   'c': 0b1000
 }
 
+export const decode_suit: Record<number, string> = {
+  1: 'h',
+  2: 's',
+  4: 'd',
+  8: 'c'
+}
+
 function encode_board(hand: Card[], board: Card[]) {
   
   let res = Array(7 * 2).fill(0);
@@ -58,7 +68,21 @@ function encode_board(hand: Card[], board: Card[]) {
   return res
 }
 
-function gen_h_b(fixed_phase?: number) {
+function decode_board(board: number[]) {
+  let res = []
+
+  for (let i = 0; i < board.length; i+=2) {
+    let e_rank = board[i],
+      e_suit = board[i+1]
+
+    let rank = ranks[e_rank - 1]
+    let suit = decode_suit[e_suit]
+    res.push(`${rank}${suit}`)
+  }
+  return res
+}
+
+function gen_h_b(fixed_phase?: number): [Card[], Card[]] {
   let cards = split_cards(7, make_deal(2))
 
   let hand = cards.slice(0, 2)
@@ -84,10 +108,7 @@ function gen_h_b(fixed_phase?: number) {
 
 
 
-function gen_ehs(fixed_phase?: number) {
-
-  let [hand, board] = gen_h_b(fixed_phase)
-
+function gen_ehs(hand: Card[], board: Card[]) {
   let e_board = encode_board(hand, board)
 
   let value = ehs(hand, board, 50, false)
@@ -99,12 +120,8 @@ function gen_ehs(fixed_phase?: number) {
 }
 
 function gen_training_data(fixed_phase?: number) {
-  let res = []
-  for (let i = 0; i < 10000; i++) {
-    let data = gen_ehs(fixed_phase)
-    res.push(data)
-  }
-  return res
+  let hb: [Card[], Card[]][] = [...Array(kSampleNb)].map(_ => gen_h_b(fixed_phase))
+  return hb.map(([hand, board]) => gen_ehs(hand, board))
 }
 
 function write_sample_to_buffer(buff: Buffer, sample: TrainingData, offset: number) {
@@ -114,9 +131,17 @@ function write_sample_to_buffer(buff: Buffer, sample: TrainingData, offset: numb
   buff.writeFloatBE(value, offset + 14)
 }
 
+function read_board_from_buffer(buff: Buffer, offset: number) {
+  let board = [...Array(14).keys()].map(i => buff.readUInt8(offset + i))
+  return board
+}
+
+function read_value_from_buffer(buff: Buffer, offset: number) {
+  return buff.readFloatBE(offset + 14)
+}
+
 let sample_size = 7 * 2 + 4
-function write_training_data(id: number, fixed_phase?: number) {
-  let data = gen_training_data(fixed_phase)
+function write_training_data(id: number, data: TrainingData[]) {
 
   let buff = Buffer.alloc(data.length * sample_size)
   data.forEach((sample, i) => write_sample_to_buffer(buff, sample, i * sample_size))
@@ -124,16 +149,51 @@ function write_training_data(id: number, fixed_phase?: number) {
   return new Promise(resolve => {
     zlib.gzip(buff, (err, buffer) => {
       let r = (Math.random() + 1).toString(36).substring(7)
-      resolve(fs.writeFile(`data/data_ehs${r}_${id}.gz`, buffer))
+      if (!fs.existsSync('data')){
+            fs.mkdirSync('data');
+      }
+ 
+      resolve(fs.writeFileSync(`data/data_ehs${r}_${id}.gz`, buffer))
     })
   })
 
 }
 
-export async function ehs_train_main(nb = 100, fixed_phase?: number) {
+
+function gen_training_data_from_hb(hb: [Card[], Card[]][]) {
+  return hb.map(([hand, board]) => gen_ehs(hand, board))
+}
+
+
+
+export async function ehs_train_prebatch() {
+  let pre_hb: [Card[], Card[]][] = [...Array(100)].map(_ => gen_h_b(4))
+  let data = gen_training_data_from_hb(pre_hb)
+  await write_training_data(1, data)
+}
+
+
+export async function read_from_data_training() {
+
+  let data = await decompress_gzip('data/data_ehs6do55_1.gz')
+
+  let res = []
+  for (let i = 0; i < data.length; i += 2 * 7 + 4) {
+    let board = read_board_from_buffer(data, i)
+    let value = read_value_from_buffer(data, i)
+    res.push([decode_board(board).join(''), value])
+  }
+
+  return res as [string, number][]
+}
+
+
+
+export async function ehs_train_main(nb: number, fixed_phase?: number) {
   for (let i = 0; i < nb; i++) {
-    console.log(i)
-    await write_training_data(i + 1, fixed_phase)
+    console.log(`${i}/${nb}`)
+    let data = gen_training_data(fixed_phase)
+    await write_training_data(i + 1, data)
   }
 }
 
