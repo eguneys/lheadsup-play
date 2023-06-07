@@ -7,10 +7,10 @@ import { filter_high } from './ehs_filter_train'
 import { test_acc_high_from_data } from './ehs_acc_test'
 
 //filter_high()
-test_acc_high_from_data()
+//test_acc_high_from_data()
 //test_neural_debug()
 
-//test_acc_main(2)
+test_acc_main(2)
 //data_training_test_acc()
 //train_main()
 //ehs_train_main(8, 4, 1000)

@@ -6,44 +6,6 @@ import { predict_strs } from './neural'
 import { get_files } from './util'
 import { read_from_data_training } from './ehs_train'
 
-async function acc_hand_board(hand: Card[], board: Card[]) {
-  let expected = ehs(hand, board)
-
-  let computation = network14.new_computation()
-  computation.AddInput(EncodeCardsForNN(hand, board))
-
-  /*
-  for (let i = 0; i < 63; i++) {
-    let cards = split_cards(7, make_deal(2))
-    let hand = cards.slice(0, 2)
-    let board: Card[] = cards.slice(2, 7)
-
-    computation.AddInput(EncodeCardsForNN(hand, board))
-  }
-
- */
-
-  await computation.ComputeAsync()
-  let got14 = computation.output[0][0]
-  //console.log(computation.output)
-
-  computation = network28.new_computation()
-  computation.AddInput(EncodeCardsForNN(hand, board))
-  await computation.ComputeAsync()
-  let got28 = computation.output[0][0]
-
-  console.log(hand.join(''), board.join(''), expected, got28.toFixed(2), got14.toFixed(2))
-}
-
-function river_hb() {
-  let cards = split_cards(7, make_deal(2))
-  let hand = cards.slice(0, 2)
-  let board: Card[] = []
-
-  board = cards.slice(2, 7)
-  return [hand, board] as [Card[], Card[]]
-}
-
 function batch_arr<A>(a: A[], batch_size: number) {
   let res = []
   let batch = []
@@ -63,25 +25,28 @@ async function batched_neural_log(data: [string, number][]) {
   let expected = data.map(_ => _[1])
 
   let output14 = await predict_strs(cards, network14)
-  //let output28 = await predict_strs(cards, network28)
+  let output28 = await predict_strs(cards, network28)
 
   let o14 = output14.map(_ => _[0])
   let acc14 = o14.filter((o, i) => Math.abs(expected[i] - o) < 0.09)
 
-  //console.log(expected, o14)
-  //let o28 = output28.map(_ => _[0])
-  //let acc28 = o28.filter((o, i) => Math.abs(expected[i] - o) < 0.09)
+  let o28 = output28.map(_ => _[0])
+  let acc28 = o28.filter((o, i) => Math.abs(expected[i] - o) < 0.09)
 
-  //console.log((acc14.length / o14.length).toFixed(2), (acc28.length / o28.length).toFixed(2))
-  console.log((acc14.length / o14.length).toFixed(2))
+  console.log((acc14.length / o14.length).toFixed(2), (acc28.length / o28.length).toFixed(2))
 }
 
 async function acc() {
 
-  let batch_size = 8
-  let rivers = [...Array(batch_size)].map(river_hb)
+  let batch_size = 24
+  let batch = [...Array(batch_size)].map(() => {
+    let cards = split_cards(7, make_deal(2))
+    let expected = ehs(cards.slice(0, 2), cards.slice(2))
 
-  //await acc_batch(rivers)
+    return [cards.join(''), expected] as [string, number]
+  })
+
+  await batched_neural_log(batch)
 }
 
 export async function test_acc_high_from_data() {
