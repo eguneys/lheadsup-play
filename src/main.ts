@@ -1,32 +1,48 @@
 import { read_from_data_training, ehs_train_prebatch, ehs_train_main, ehs_train_stats } from './ehs_train'
 import { parallel_work } from './cluster'
 import { test_neural_debug, test_acc_main } from './ehs_acc_test'
-import { predict_str } from './neural'
+import { predict_strs } from './neural'
 import { make_deal, split_cards } from 'lheadsup'
 
-//ehs_train_stats()
-//test_acc_main(5)
-//ehs_train_prebatch()
 
-//test_neural_debug()
+//test_acc_main(2)
+//data_training_test_acc()
+//train_main()
+ehs_train_main(8, 4, 1000)
 
-//let res = await read_from_data_training()
+async function data_training_test_acc() {
+  let filename = '/tmp/ehs-data/river/data_ehsdsacw_5.gz'
+  filename = '/tmp/ehs-data/data_all/data_ehsblqyn_6.gz'
+  let res = await read_from_data_training(filename)
 
-/*
-let acc = []
-for (let i = 0; i < res.length; i++) {
-  let [cards, value] = res[i]
-  let v = await predict_str(cards.slice(0, 4), cards.slice(4))
-  acc.push(Math.abs(v - value))
-  //console.log(`["${cards.slice(0, 4)}", "${cards.slice(4)}", ${v}],`)
+  let expected = res.map(_ => _[1])
+  let output = (await predict_strs(res.map(_ => _[0]))).map(_ => _[0])
+
+
+  let acc = expected.map((e, i) => Math.abs(e - output[i]))
+
+  let corrects = acc.filter(_ => _ < 0.09)
+
+  console.log(corrects.length / acc.length)
 }
 
-acc.sort()
+async function data_training_debug_log() {
+  let res = await read_from_data_training('')
 
-acc = acc.filter(_ => _ > 0.09)
+  let acc = []
+  for (let i = 0; i < res.length; i++) {
+    let [cards, value] = res[i]
+    let v = (await predict_strs([cards]))[0][0]
+    acc.push(Math.abs(v - value))
+    //console.log(`["${cards.slice(0, 4)}", "${cards.slice(4)}", ${v}],`)
+  }
 
-console.log(acc, acc.length)
-*/
+  acc.sort()
+
+  acc = acc.filter(_ => _ > 0.09)
+
+  console.log(acc, acc.length)
+}
 
 function train_main() {
   let phase = 4
@@ -35,4 +51,3 @@ function train_main() {
   parallel_work((cpus) => ehs_train_main(Math.ceil(kSampleNb / cpus), phase), utilization)
 }
 
-train_main()

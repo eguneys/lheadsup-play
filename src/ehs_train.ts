@@ -119,8 +119,8 @@ function gen_ehs(hand: Card[], board: Card[]) {
   }
 }
 
-function gen_training_data(fixed_phase?: number) {
-  let hb: [Card[], Card[]][] = [...Array(kSampleNb)].map(_ => gen_h_b(fixed_phase))
+function gen_training_data(fixed_phase?: number, sample_nb = kSampleNb) {
+  let hb: [Card[], Card[]][] = [...Array(sample_nb)].map(_ => gen_h_b(fixed_phase))
   return hb.map(([hand, board]) => gen_ehs(hand, board))
 }
 
@@ -173,9 +173,9 @@ export async function ehs_train_prebatch() {
 }
 
 
-export async function read_from_data_training() {
+export async function read_from_data_training(filename: string) {
 
-  let data = await decompress_gzip('data/data_ehs6do55_1.gz')
+  let data = await decompress_gzip(filename)
 
   let res = []
   for (let i = 0; i < data.length; i += 2 * 7 + 4) {
@@ -189,10 +189,10 @@ export async function read_from_data_training() {
 
 
 
-export async function ehs_train_main(nb: number, fixed_phase?: number) {
+export async function ehs_train_main(nb: number, fixed_phase?: number, sample_nb?: number) {
   for (let i = 0; i < nb; i++) {
     console.log(`${i}/${nb}`)
-    let data = gen_training_data(fixed_phase)
+    let data = gen_training_data(fixed_phase, sample_nb)
     await write_training_data(i + 1, data)
   }
 }

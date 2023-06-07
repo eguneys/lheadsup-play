@@ -2,7 +2,7 @@ import { network14, network28 } from './neural'
 import { EncodeCardsForNN } from './neural'
 import { Card, split_cards, make_deal } from 'lheadsup'
 import { ehs } from '../src/mcts'
-import { predict_str } from './neural'
+import { predict_strs } from './neural'
 
 async function acc_hand_board(hand: Card[], board: Card[]) {
   let expected = ehs(hand, board)
@@ -61,12 +61,15 @@ async function acc_batch(batch: [Card[], Card[]][]) {
   let acc14 = o14.filter((o, i) => Math.abs(expected[i] - o) < 0.09)
   let acc28 = o28.filter((o, i) => Math.abs(expected[i] - o) < 0.09)
 
+  console.log(expected)
+  console.log(o14)
+
   console.log((acc14.length / o14.length).toFixed(2), (acc28.length / o28.length).toFixed(2))
 }
 
 async function acc() {
 
-  let batch_size = 32
+  let batch_size = 8
   let rivers = [...Array(batch_size)].map(river_hb)
 
   await acc_batch(rivers)
@@ -101,6 +104,6 @@ export async function test_neural_debug() {
     let cards = split_cards(7, res[i])
     let hand = cards.slice(0, 2).join('')
     let board = cards.slice(2, 7).join('')
-    console.log(`["${hand}", "${board}", ${await predict_str(hand, board)}],`)
+    console.log(`["${hand}", "${board}", ${await predict_strs([res[i]])}],`)
   }
 }

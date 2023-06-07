@@ -546,8 +546,8 @@ export class Network {
   }
 }
 
-let n14_name = 'ehs1_river_3x32-252000'
-let n28_name = 'ehs1_river_3x32-252000'
+let n14_name = 'ehs1_river_3x32-108000'
+let n28_name = 'ehs1_river_3x32-36000'
 
 let network14 = new Network()
 await network14.init(n14_name)
@@ -565,11 +565,14 @@ if (false) {
   console.log(computation.output)
 }
 
-export async function predict_str(hand: string, board: string) {
+export async function predict_strs(cards: string[]) {
   let computation = network14.new_computation()
 
-  let input = EncodeCardsForNN(split_cards(2, hand), split_cards(5, board))
-  computation.AddInput(input)
+  cards.forEach(_ => {
+    let cards = split_cards(7, _)
+    let input = EncodeCardsForNN(cards.slice(0, 2), cards.slice(2))
+    computation.AddInput(input)
+  })
   await computation.ComputeAsync()
-  return computation.output[0][0]
+  return computation.output
 }
