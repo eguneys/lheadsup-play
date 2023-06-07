@@ -55,7 +55,7 @@ export const decode_suit: Record<number, string> = {
   8: 'c'
 }
 
-function encode_board(hand: Card[], board: Card[]) {
+export function encode_board(hand: Card[], board: Card[]) {
   
   let res = Array(7 * 2).fill(0);
 
@@ -107,7 +107,6 @@ function gen_h_b(fixed_phase?: number): [Card[], Card[]] {
 }
 
 
-
 function gen_ehs(hand: Card[], board: Card[]) {
   let e_board = encode_board(hand, board)
 
@@ -141,7 +140,7 @@ function read_value_from_buffer(buff: Buffer, offset: number) {
 }
 
 let sample_size = 7 * 2 + 4
-function write_training_data(id: number, data: TrainingData[]) {
+export function write_training_data(id: number, data: TrainingData[], prefix: string = '', basefolder: string = 'data') {
 
   let buff = Buffer.alloc(data.length * sample_size)
   data.forEach((sample, i) => write_sample_to_buffer(buff, sample, i * sample_size))
@@ -149,11 +148,11 @@ function write_training_data(id: number, data: TrainingData[]) {
   return new Promise(resolve => {
     zlib.gzip(buff, (err, buffer) => {
       let r = (Math.random() + 1).toString(36).substring(7)
-      if (!fs.existsSync('data')){
-            fs.mkdirSync('data');
+      if (!fs.existsSync(basefolder)){
+            fs.mkdirSync(basefolder);
       }
  
-      resolve(fs.writeFileSync(`data/data_ehs${r}_${id}.gz`, buffer))
+      resolve(fs.writeFileSync(`${basefolder}/data_ehs_${prefix}_${r}_${id}.gz`, buffer))
     })
   })
 

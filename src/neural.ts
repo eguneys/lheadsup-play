@@ -55,8 +55,8 @@ export function EncodeCardsForNN(hand: Card[], board: Card[]) {
   let res = []
   for (let i = 0; i < 2; i++) {
     let [rank, suit] = hand[i]
-    res[i * 2 + 0] = encode_suit[suit]
-    res[i * 2 + 1] = ranks.indexOf(rank) + 1
+    res[i * 2 + 0] = ranks.indexOf(rank) + 1
+    res[i * 2 + 1] = encode_suit[suit]
   }
 
   res[2 * 2] = 0xffffffff
@@ -64,8 +64,8 @@ export function EncodeCardsForNN(hand: Card[], board: Card[]) {
     let card = board[i]
     if (card) {
       let [rank, suit] = card
-      res[2 * 2 + 1 +  i * 2 + 0] = encode_suit[suit]
-      res[2 * 2 + 1 + i * 2 + 1] = ranks.indexOf(rank) + 1
+      res[2 * 2 + 1 +  i * 2 + 0] = ranks.indexOf(rank) + 1
+      res[2 * 2 + 1 + i * 2 + 1] = encode_suit[suit]
     }
   }
 
@@ -546,8 +546,8 @@ export class Network {
   }
 }
 
-let n14_name = 'ehs1_river_3x32-108000'
-let n28_name = 'ehs1_river_3x32-36000'
+let n14_name = 'ehs1_river_3x32_debug-108000'
+let n28_name = 'ehs1_river_3x32_debug-108000'
 
 let network14 = new Network()
 await network14.init(n14_name)
@@ -565,8 +565,8 @@ if (false) {
   console.log(computation.output)
 }
 
-export async function predict_strs(cards: string[]) {
-  let computation = network14.new_computation()
+export async function predict_strs(cards: string[], network: Network = network14) {
+  let computation = network.new_computation()
 
   cards.forEach(_ => {
     let cards = split_cards(7, _)

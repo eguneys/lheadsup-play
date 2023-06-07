@@ -10,3 +10,11 @@ export function decompress_gzip(filename: string): Promise<Buffer> {
     })
   })
 }
+
+export function get_files(folder: string): Promise<string[]> {
+  return new Promise(resolve => {
+    fs.readdir(folder, (err, files) => {
+      return resolve(files)
+    })
+  })
+}
