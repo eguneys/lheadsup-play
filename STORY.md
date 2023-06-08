@@ -60,26 +60,56 @@ There are the simple strategies like as silly as like always folding, or more de
 
 I built a benchmark that let's all players mash up and see how well they do against each other. The code is not well written but it's ok.
 
-There is no clear strategy or tactics that can be applied in a game of poker, as opposed to chess. It is often mentioned that good players get an edge in the long term. But the "long term" is vague. From what I understand we can built 2 types of advanced poker strategy that would eventually gets an edge against simple strategies and hopefully against human players as well. One is the often mentioned "Game Theory Optimal" game play, this will make the decisions based on pot odds and the strength of the hand, and gets an eventual edge against deviating players in the long term. This type of play is called unexploitable solid play. The second and our ultimate goal with this project, is player will consider the history of the rounds, and hopefully actually exploit the various tendencies opponent makes. This assumption is the whole point of all the efforts we put into this AI project. I have played poker mostly for fun and trust in my decent skills, but I have no experience if this would actually work. 
+There is no clear strategy or tactics that can be applied in a game of poker, as opposed to chess. It is often mentioned that good players get an edge in the long term. But the "long term" is vague. From what I understand we can built 2 types of advanced poker strategy that would eventually gets an edge against simple strategies and hopefully against human players as well. One is the often mentioned "Game Theory Optimal" game play, this will make the decisions based on pot odds and the strength of the hand, and gets an eventual edge against deviating players in the long term. This type of play is called unexploitable solid play. The second and our ultimate goal with this project, is a player that will consider the history of the rounds, and hopefully actually exploit the various tendencies opponent makes. This assumption is the whole point of all the efforts we put into this AI project. I have played poker mostly for fun and trust in my decent skills, but I have no experience if this would actually work. 
 
 ## A Serious attempt at MCTS Poker AI
 
 Now we enter the shady territory where ChatGPT sheds some light into our path.
-The MCTS algorithm as implemented in lc0 is swarming with multithreading and more statistics and math that is difficult to understand. So my first attempt to mostly copy it partly failed. And there isn't clear cut, well defined MCTS algorithms on the internet. So I asked ChatGPT which it responded with a nice example implementation in Javascript. 
+The MCTS algorithm as implemented in lc0 is swarming with multithreading and more statistics and math that is difficult to understand. So my first attempt to mostly copy it partly failed. And there isn't clear cut, well defined MCTS algorithms on the internet. So I asked ChatGPT which it responded with a nice example implementation in Javascript. You can find the conversation at ChatGPT section at the bottom.
 
 
-The actual MCTS after expanding a node that has no child, the value of the node is calculated by simulating a random playout starting from that node until the game ends, and using the game result as the value of the node. At first this gives a random result for the value of the node, considering the overall search the randomness is overcome by the number of iterations and giving more weight to promising children and eventually the best node will stand out. This is well explained by ChatGPT which there is a link to the conversation below. This algorithm forms the basis for our "Game Theory Optimal" Player.
+The actual MCTS, after expanding a node that has no child, the value of the node is calculated by simulating a random playout starting from that node until the game ends, and using the game result as the value of the node. At first this gives a random result for the value of the node, considering the overall search the randomness is overcome by the number of iterations and giving more weight to promising children and eventually the best node will stand out. This is well explained by ChatGPT which there is a link to the conversation below. This algorithm forms the basis for our "Game Theory Optimal" Player.
 
-Each node in MCTS is associated with a game position. A Node is terminal if the game position is an end situation. In chess this could be a checkmate or a stalemate. In our case in poker, a game position is a round of headsup poker where cards are dealt and it is a player to act, or a terminal situation where one player is about to collect the pot in a round. So one MCTS only cares about a single round of poker, where if it's player's turn to act it plays a move randomly otherwise it's a terminal situation where it evaluates the value of that situation. But this will change with our second type of player which we will come to later.
+Each node in MCTS is associated with a game position. A Node is terminal if the game position is an end situation. In chess this could be a checkmate or a stalemate. In our case in poker, a game position is a round of headsup poker where cards are dealt and it is a player to act, or a terminal situation where one player is about to collect the pot in a round. So one MCTS only cares about a single round of poker, while simulating a playout where if it's player's turn to act it plays a move randomly otherwise it's a terminal situation where it evaluates the value of that situation. But this will change with our second type of player which we will come to later. Note that we quickly skip the dealer actions by applying them in the playout.
 
-So our concern becomes how to evaluate the terminal situation of a poker round. Which is explained in detail [in this SO question on poker.stackexchange](https://poker.stackexchange.com/questions/12062/how-to-estimate-the-value-of-specific-end-round-situations-in-a-texas-holdem-he).
+So our concern becomes how to evaluate the terminal situation of a poker round. Which is explained in detail [in this SO question that I asked on poker.stackexchange](https://poker.stackexchange.com/questions/12062/how-to-estimate-the-value-of-specific-end-round-situations-in-a-texas-holdem-he).
 
 
 After working out the details of implementing this version, now I have a decent looking player using naive MCTS. Unfortunately I could only test against simple strategies I mentioned above. It gets even against always all in raiser, which probably could be improved with some tweaks. But I've tweaked it plenty already and don't want to spend more time on it as of now. I would get a better feel if I could play with it myself, which I plan to do after building a front end and an actual server that can host these tournaments.
 
-As a side note, the MCTS folds plenty against always all in raiser, which goes allin preflop every hand. It calls with a pair of queens and probably some other pairs and folds Ace King. But I haven't tested throughly. Also it doesn't just blind out by folding, it calls an allin after getting below 2000 chips, which is a promising result. Although I am not sure if it actually is close to what I desired to accomplish as a "Game Theory Optimal" Player, I would probably get a better feel how strong, or at least interesting, it plays if I could play against it myself. It somewhat selects medium range raises which is considered interesting.
+As a side note, the MCTS folds plenty against always all in raiser, which goes allin preflop every hand. It calls with a pair of queens and probably some other pairs and folds Ace King. But I haven't tested throughly. Also it doesn't just blind out by folding, it calls an allin after getting below 2000 chips, which is a promising result. Although I am not sure if it actually is close to what I desired to accomplish as a "Game Theory Optimal" Player, I would probably get a better feel how strong, or at least interesting, it plays if I could play against it myself. It seldom selects medium range raises which is considered interesting.
 
-Now we turn our attention to the journey of our final goal, and see if we can get an edge against this version of naive MCTS Player.
+Of course this has no concept of bluffing or slow playing, or playing the player, now we turn our attention to the journey of our final goal, and see if we can get an edge against this version of naive MCTS Player.
+
+## Journey for Reinforcement Learning Self Playing Poker AI
+
+Before we begin, we start with warmup tasks.
+
+There is one bottleneck with the naive MCTS Player we mentioned in the previous chapter.
+
+ `let strength = ehs(round.stacks[0].hand!, middle)`
+
+The strength of the hand is calculated by simulating 50 iterations of possible outcomes and returning the ratio of winning. This is slow as it evaluates the poker hand, which is already not a well optimized function, on each iteration. So this drastically slowed down the benchmarks.
+
+One challenge with using neural networks, at least for a beginner, is it consists of two parts. One part is training, the second part is predicting. And training and predicting is implemented separately on different programming languages. Training will be done in Python, predicting will be done in Javascript (lc0 uses C++). Tensorflow.js helps with this as it provides the same Tensorflow API as Tensorflow API for Python. Still I am not exactly sure if it will behave the exact same way as there are a lot of calculations done on various dimensions. Also the input data needs to be encoded the same in both versions. Finally there is the challenge of transfer of weights (that is as we refer to as the network itself). Which is not clearly explained in the docs. 
+
+Hopefully the leela zero codebase acts as a solid reference, which explains everything precisely in code, the docs, and ChatGPT makes this job a lot easier.
+
+### Label the Poker Hands
+
+So for starters, I thought I would rank a poker hand, which consists of 5 cards (actual poker hand is 5 cards that makes the best hand out of 7 cards), like high card with A kicker, pair of Aces, 2 pair with Ace and 2, a set, a flush etc.
+So I mostly copied the code from [lc0-training](https://github.com/LeelaChessZero/lc0), adapting to our specific task, which is simpler and means less code.
+
+To summarize what is happening: 
+
+- A config file which some parameters are specified. 
+- The training data that is split into lots of separate gzipped files called chunks. That consists of like 10k samples of data.
+- A chunk parser that parses chunks of gzipped training data and generates batches of input for consuming by a Tensorflow Dataset.
+- Two of these chunk parsers one for training and one for testing.
+- Two Tensorflow Datasets that uses two chunk parsers each (passes the batches of input generated by chunk parser into the Tensorflow model).
+- A TFProcess class that builds the model, restores from a checkpoint, runs the training loop for some number of steps, saves the model's weights into a file.
+
+
 
 
 ## Interesting ChatGPT Conversations
