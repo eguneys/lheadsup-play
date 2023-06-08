@@ -112,11 +112,11 @@ To summarize what is happening:
 
 ### Task #2 Evaluate the Hand Strength
 
-As mentioned previously this function is slow as is currently used, so we will attempt at calculating this faster using neural networks.
+As mentioned previously, this function is slow as is currently used, so we will attempt at calculating this faster using neural networks.
 
 This is a simplified version of algorithm explained [in this wiki article](https://en.wikipedia.org/wiki/Effective_hand_strength_algorithm). At 4 phases of a poker round, preflop, flop, turn and river, player has two cards at hand, and 5 cards on the board are revealed in each phase. So given total of 7 cards, a player makes up his hand by selecting 5 cards that makes up the best hand. But hand strength takes into account not only unrevealed cards on the board, but also the opponents two cards that might possibly beat player's own hand also using the board. Thus the hand strength is calculated by simulating possible cards that are unknown by random selection 50 times and calculating the win ratio against those simulations.
 
-The best thing about this task is we can generate as many data samples as we like without dealing with noise or inaccurate data. The downside is it's a little slow. All we have to do is generate 7 cards randomly calculate the hand strength, use this as one sample out of 10k samples, and pack this into one gzipped chunk of data, and do this 100 times, to get one million samples.
+The best thing about this task is we can generate as many data samples as we like without dealing with noise or inaccurate data. The downside is, it's a little slow. All we have to do is generate 7 cards randomly calculate the hand strength, use this as one sample out of 10k samples, and pack this into one gzipped chunk of data, and do this 100 times, to get one million samples.
 
 The input to the model is slots for 7 cards 5 of them could be empty if it's on preflop phase, and all of them are filled on the river phase. Through some iterations, I figured I would get more accurate results if I built separate networks for each phase of the game, and use the according network on each specific phase. And the input encoding and network architecture doesn't have to change on any of the networks, we just train them on specific samples of data taken from that specific phase. Like river network would train with data that has all card slots filled, and preflop phase would train with data that has only 2 card slots filled.
 
@@ -143,7 +143,7 @@ Note that Output is the hand strength value in 0-1 range.
 
 `3x32` means 3 residual blocks and 32 filters. `50000` means it is trained for 50000 steps.
 
-`3x32` network performs x6 faster than naive calculation so that's a plus. Though the real benefit of this experiment is that we actually built a working example of a neural network that we can use with a certain level of error.
+`3x32` network performs x6 faster than naive calculation so that's a plus. Though the real benefit of this experiment is that we actually built a working example of a neural network that we can use with a certain level of error. In the context of an AI will use this prediction to estimate the hand strength, we can possibly tolerate this error, it at most might cause folding a good hand or raising with a bad hand, which would only add variety to the game play. Of course through analysis would be a better estimation of this because consistent errors might result in unexpected results.
 
 Tackling with our real challenge, now we are more experienced.
 
