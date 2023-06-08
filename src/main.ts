@@ -24,7 +24,8 @@ function train_main() {
   let utilization = process.argv[2] === 'f' ? 1 : 0.1
   let kSampleNb = parseInt(process.argv[3]) || 2
   let phase = process.argv[4]
-  parallel_work((cpus) => ehs_train_main(Math.ceil(kSampleNb / cpus), phase, 100), utilization)
+  parallel_work((cpus) => ehs_train_main(Math.ceil(kSampleNb / cpus), 
+                                         phase, 10000), utilization)
 }
 
 train_main()
