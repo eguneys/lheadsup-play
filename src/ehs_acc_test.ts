@@ -57,7 +57,7 @@ async function batched_neural_all_log(data: [string, number][]) {
 
 async function acc() {
 
-  let batch_size = 24
+  let batch_size = 2048
   let batch = [...Array(batch_size)].map(() => {
     let cards = split_cards(7, make_deal(2))
     let expected = ehs(cards.slice(0, 2), cards.slice(2))

@@ -550,7 +550,7 @@ export class Network {
 }
 
 let n14_name = 'ehs1_river_0x16-36000'
-let n28_name = 'ehs1_river_0x16-36000'
+let n28_name = 'ehs1_river_3x32-50000'
 
 let network14 = new Network(n14_name)
 await network14.init(n14_name)

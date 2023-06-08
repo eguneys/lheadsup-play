@@ -60,7 +60,7 @@ There are the simple strategies like as silly as like always folding, or more de
 
 I built a benchmark that let's all players mash up and see how well they do against each other. The code is not well written but it's ok.
 
-There is no clear strategy or tactics that can be applied in a game of poker, as opposed to chess. It is often mentioned that good players get an edge in the long term. But the "long term" is vague. From what I understand we can built 2 types of advanced poker strategy that would eventually gets an edge against simple strategies and hopefully against human players as well. One is the often mentioned "Game Theory Optimal" game play, this will make the decisions based on pot odds and the strength of the hand, and gets an eventual edge against deviating players in the long term. This type of play is called unexploitable solid play. The second and our ultimate goal with this project, is a player that will consider the history of the rounds, and hopefully actually exploit the various tendencies opponent makes. This assumption is the whole point of all the efforts we put into this AI project. I have played poker mostly for fun and trust in my decent skills, but I have no experience if this would actually work. 
+There is no clear strategy or tactics that can be applied in a game of poker, as opposed to chess. It is often mentioned that good players get an edge in the long term. But the "long term" is vague. From what I understand we can build 2 types of advanced poker strategy that would eventually gets an edge against simple strategies and hopefully against human players as well. One is the often mentioned "Game Theory Optimal" game play, this will make the decisions based on pot odds and the strength of the hand, and gets an eventual edge against deviating players in the long term. This type of play is called unexploitable solid play. The second and our ultimate goal with this project, is a player that will consider the history of the rounds, and hopefully actually exploit the various tendencies opponent makes. This assumption is the whole point of all the efforts we put into this AI project. I have played poker mostly for fun and trust in my decent skills, but I have no experience if this would actually work. 
 
 ## A Serious attempt at MCTS Poker AI
 
@@ -95,7 +95,7 @@ One challenge with using neural networks, at least for a beginner, is it consist
 
 Hopefully the leela zero codebase acts as a solid reference, which explains everything precisely in code, the docs, and ChatGPT makes this job a lot easier.
 
-### Label the Poker Hands
+### Task #1 Label the Poker Hands
 
 So for starters, I thought I would rank a poker hand, which consists of 5 cards (actual poker hand is 5 cards that makes the best hand out of 7 cards), like high card with A kicker, pair of Aces, 2 pair with Ace and 2, a set, a flush etc.
 So I mostly copied the code from [lc0-training](https://github.com/LeelaChessZero/lc0), adapting to our specific task, which is simpler and means less code.
@@ -110,6 +110,42 @@ To summarize what is happening:
 - A TFProcess class that builds the model, restores from a checkpoint, runs the training loop for some number of steps, saves the model's weights into a file.
 
 
+### Task #2 Evaluate the Hand Strength
+
+As mentioned previously this function is slow as is currently used, so we will attempt at calculating this faster using neural networks.
+
+This is a simplified version of algorithm explained [in this wiki article](https://en.wikipedia.org/wiki/Effective_hand_strength_algorithm). At 4 phases of a poker round, preflop, flop, turn and river, player has two cards at hand, and 5 cards on the board are revealed in each phase. So given total of 7 cards, a player makes up his hand by selecting 5 cards that makes up the best hand. But hand strength takes into account not only unrevealed cards on the board, but also the opponents two cards that might possibly beat player's own hand also using the board. Thus the hand strength is calculated by simulating possible cards that are unknown by random selection 50 times and calculating the win ratio against those simulations.
+
+The best thing about this task is we can generate as many data samples as we like without dealing with noise or inaccurate data. The downside is it's a little slow. All we have to do is generate 7 cards randomly calculate the hand strength, use this as one sample out of 10k samples, and pack this into one gzipped chunk of data, and do this 100 times, to get one million samples.
+
+The input to the model is slots for 7 cards 5 of them could be empty if it's on preflop phase, and all of them are filled on the river phase. Through some iterations, I figured I would get more accurate results if I built separate networks for each phase of the game, and use the according network on each specific phase. And the input encoding and network architecture doesn't have to change on any of the networks, we just train them on specific samples of data taken from that specific phase. Like river network would train with data that has all card slots filled, and preflop phase would train with data that has only 2 card slots filled.
+
+As a beginner who have never done this before, I expect to get useful results as this is a lot similar to a simple image recognition task. Though, naturally not only you need to consider the hand you have made like two pair, one pair, high card, straight etc, but you also have to consider the possiblity of your opponent making a higher hand like, if there are 4 clubs on the board, it is more likely your set (which is normally very strong on headsup poker), might be beaten, so greatly reduces the common strength of your hand. Of course none of this logic matters to a neural network, as I am not exactly sure how it works in it's intricate details.
+
+
+I was feeling good when the value I get from the Accuracy metric on training in Python finally matched the model I built on Javascript. But it took a while of debugging to get there. But from that point on, I knew all I had to worry about was actually training a good network.
+
+The model is training as this article is being written. But currently I couldn't pass 80% accuracy on test set, which is even lower as 70% on random hand data. 
+
+Here are some pretty stats I print for various networks:
+(A is accuracy, O is outliers)
+```
+ehs1_river_0x16-108000 A: 0.43 O: 0.22
+ehs1_river_0x16-36000 A: 0.31 O: 0.37
+ehs1_river_1x32-36000 A: 0.59 O: 0.13
+ehs1_river_3x32-100000 A: 0.58 O: 0.12
+ehs1_river_3x32-50000 A: 0.76 O: 0.05
+ehs1_river_6x64-108000 A: 0.74 O: 0.06
+```
+Accuracy is the ratio of number of accurate samples that is output with a difference less than 0.09 than the target.
+Outlier is the ratio of number of outlier samples that is output with a difference greater than 0.2 than the target.
+Note that Output is the hand strength value in 0-1 range.
+
+`3x32` means 3 residual blocks and 32 filters. `50000` means it is trained for 50000 steps.
+
+`3x32` network performs x6 faster than naive calculation so that's a plus. Though the real benefit of this experiment is that we actually built a working example of a neural network that we can use with a certain level of error.
+
+Tackling with our real challenge, now we are more experienced.
 
 
 ## Interesting ChatGPT Conversations
