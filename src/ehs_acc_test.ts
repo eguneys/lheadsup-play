@@ -6,6 +6,30 @@ import { predict_strs } from './neural'
 import { get_files } from './util'
 import { read_from_data_training } from './ehs_train'
 
+const phase_long: Record<string, string> = {
+  'p': 'Preflop',
+  'f': 'Flop',
+  't': 'Turn',
+  'r': 'River'
+}
+
+function split_cards_for_phase(phase: string) {
+  let cards = split_cards(7, make_deal(2))
+  if (phase === 'p') {
+    return [cards.slice(0, 2), []]
+  }
+  if (phase === 'f') {
+    return [cards.slice(0, 2), cards.slice(2, 5)]
+  }
+  if (phase === 't') {
+    return [cards.slice(0, 2), cards.slice(2, 6)]
+  }
+  // phase === 'r'
+  return [cards.slice(0, 2), cards.slice(2, 7)]
+}
+
+
+
 function batch_arr<A>(a: A[], batch_size: number) {
   let res = []
   let batch = []
@@ -55,18 +79,25 @@ async function batched_neural_all_log(data: [string, number][]) {
   console.log(res.join('\n'))
 }
 
-async function acc() {
+async function acc(phase: string) {
 
-  let batch_size = 2048
+  let batch_size = 128
   let batch = [...Array(batch_size)].map(() => {
-    let cards = split_cards(7, make_deal(2))
-    let expected = ehs(cards.slice(0, 2), cards.slice(2))
+    let [hand, board] = split_cards_for_phase(phase)
+    let expected = ehs(hand, board)
 
-    return [cards.join(''), expected] as [string, number]
+    return [[...hand, ...board].join(''), expected] as [string, number]
   })
 
-  //await batched_neural_log(batch)
   await batched_neural_all_log(batch)
+}
+
+export async function test_acc_main(phase: string, nb: number = 100) {
+  console.log(phase_long[phase])
+  for (let i = 0; i < nb; i++) {
+    await acc(phase)
+    console.log('\n')
+  }
 }
 
 export async function test_acc_high_from_data() {
@@ -84,14 +115,6 @@ export async function test_acc_high_from_data() {
     }
   }
 }
-
-export async function test_acc_main(nb: number = 100) {
-  for (let i = 0; i < nb; i++) {
-    await acc()
-    console.log('\n')
-  }
-}
-
 
 export async function test_neural_debug() {
 

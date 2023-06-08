@@ -10,7 +10,9 @@ import { test_acc_high_from_data } from './ehs_acc_test'
 //test_acc_high_from_data()
 //test_neural_debug()
 
-test_acc_main(16)
+//await test_acc_main('r', 2)
+//await test_acc_main('t', 2)
+//await test_acc_main('f', 2)
 //data_training_test_acc()
 //train_main()
 //ehs_train_main(8, 4, 1000)
@@ -50,9 +52,11 @@ async function data_training_debug_log() {
 }
 
 function train_main() {
-  let phase = 4
-  let utilization = process.argv[2] === 'f' ? 100 : undefined
+  console.log('Usage: pnpm start f kSampleNb phase') 
+  let utilization = process.argv[2] === 'f' ? 1 : 0.1
   let kSampleNb = parseInt(process.argv[3]) || 2
-  parallel_work((cpus) => ehs_train_main(Math.ceil(kSampleNb / cpus), phase), utilization)
+  let phase = process.argv[4]
+  parallel_work((cpus) => ehs_train_main(Math.ceil(kSampleNb / cpus), phase, 10000), utilization)
 }
 
+train_main()

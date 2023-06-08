@@ -6,7 +6,7 @@ import { cpus } from 'os'
 export async function parallel_work(work: (nb: number) => Promise<void>, utilization: number = 0.5) {
   //const numCPUs = availableParallelism()
   const numCPUs = cpus().length
-  let used = Math.min(numCPUs, numCPUs * utilization)
+  let used = Math.min(numCPUs, Math.ceil(numCPUs * utilization))
 
   if (cluster.isMaster) {
     console.log(`Primary ${process.pid} is running with ${used}/${numCPUs} cpus`)

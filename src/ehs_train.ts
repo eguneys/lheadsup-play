@@ -82,19 +82,19 @@ function decode_board(board: number[]) {
   return res
 }
 
-function gen_h_b(fixed_phase?: number): [Card[], Card[]] {
+function gen_h_b(fixed_phase: string): [Card[], Card[]] {
   let cards = split_cards(7, make_deal(2))
 
   let hand = cards.slice(0, 2)
   let board = cards.slice(2, 7)
 
-  let phase = fixed_phase ?? Math.floor(Math.random() * 4) + 1
+  let phase = phase_long[fixed_phase] ?? fixed_phase
 
-  if (phase === 1) {
+  if (phase === 'preflop') {
     board = []
-  } else if (phase === 2) {
+  } else if (phase === 'flop') {
     board.splice(3)
-  } else if (phase === 3) {
+  } else if (phase === 'turn') {
     board.splice(4)
   } else {
   }
@@ -118,7 +118,7 @@ function gen_ehs(hand: Card[], board: Card[]) {
   }
 }
 
-function gen_training_data(fixed_phase?: number, sample_nb = kSampleNb) {
+function gen_training_data(fixed_phase: string, sample_nb = kSampleNb) {
   let hb: [Card[], Card[]][] = [...Array(sample_nb)].map(_ => gen_h_b(fixed_phase))
   return hb.map(([hand, board]) => gen_ehs(hand, board))
 }
@@ -152,7 +152,8 @@ export function write_training_data(id: number, data: TrainingData[], prefix: st
             fs.mkdirSync(basefolder);
       }
  
-      resolve(fs.writeFileSync(`${basefolder}/data_ehs_${prefix}_${r}_${id}.gz`, buffer))
+      let filename = ['data_ehs', prefix, r, id].join('_')
+      resolve(fs.writeFileSync(`${basefolder}/${filename}.gz`, buffer))
     })
   })
 
@@ -166,7 +167,7 @@ function gen_training_data_from_hb(hb: [Card[], Card[]][]) {
 
 
 export async function ehs_train_prebatch() {
-  let pre_hb: [Card[], Card[]][] = [...Array(100)].map(_ => gen_h_b(4))
+  let pre_hb: [Card[], Card[]][] = [...Array(100)].map(_ => gen_h_b('r'))
   let data = gen_training_data_from_hb(pre_hb)
   await write_training_data(1, data)
 }
@@ -188,12 +189,19 @@ export async function read_from_data_training(filename: string) {
 
 
 
-export async function ehs_train_main(nb: number, fixed_phase?: number, sample_nb?: number) {
+export async function ehs_train_main(nb: number, fixed_phase: string = 'r', sample_nb?: number) {
   for (let i = 0; i < nb; i++) {
     console.log(`${i}/${nb}`)
     let data = gen_training_data(fixed_phase, sample_nb)
-    await write_training_data(i + 1, data)
+    await write_training_data(i + 1, data, phase_long[fixed_phase] || fixed_phase)
   }
+}
+
+const phase_long: Record<string, string> = {
+  'p': 'preflop',
+  'f': 'flop',
+  't': 'turn',
+  'r': 'river'
 }
 
 
@@ -241,7 +249,7 @@ export function ehs_train_stats() {
   let batch_size = 64
 
   for (let i = 0; i < batch_size; i++) {
-    let [hand, board] = gen_h_b(4)
+    let [hand, board] = gen_h_b('r')
 
     let rank = hand_rank([...hand, ...board])
     let bucket = rank.fen!.split(' ').slice(0, 3).join('')
