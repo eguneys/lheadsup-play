@@ -47,7 +47,9 @@ async function batched_neural_all_log(data: [string, number][]) {
     let o = output.map(_ => _[0])
     let acc = o.filter((o, i) => Math.abs(expected[i] - o) < 0.09)
 
-    return `${network.name} ${(acc.length / o.length).toFixed(2)}`
+    let outliers = o.filter((o, i) => Math.abs(expected[i] - o) > 0.2)
+
+    return `${network.name} A: ${(acc.length / o.length).toFixed(2)} O: ${(outliers.length / o.length).toFixed(2)}`
   }))
 
   console.log(res.join('\n'))
