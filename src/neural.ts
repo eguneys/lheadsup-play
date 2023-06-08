@@ -3,6 +3,7 @@ import zlib from 'node:zlib'
 import fs from 'fs'
 import { Card, split_cards } from 'lheadsup'
 import { encode_suit, ranks, card_sort } from './ehs_train'
+import { get_files } from './util'
 
 const kEpsilon = 0.00001
 
@@ -521,6 +522,8 @@ function parse_weights_json(buffer: Buffer): WeightsLegacy {
 
 export class Network {
 
+  constructor(readonly name: string) {}
+
   model!: tf.LayersModel
 
   async init(filename: string) {
@@ -546,15 +549,27 @@ export class Network {
   }
 }
 
-let n14_name = 'ehs1_river_3x32_debug-108000'
-let n28_name = 'ehs1_river_3x32_debug-108000'
+let n14_name = 'ehs1_river_0x16-36000'
+let n28_name = 'ehs1_river_0x16-36000'
 
-let network14 = new Network()
+let network14 = new Network(n14_name)
 await network14.init(n14_name)
-let network28 = new Network()
+let network28 = new Network(n28_name)
 await network28.init(n28_name)
 export { network14, network28 }
 
+export const networks_all = await discover_all_networks()
+
+async function discover_all_networks() {
+  let files = await get_files('networks')
+
+  return Promise.all(files.filter(_ => _.endsWith('.json.gz'))
+                     .map(_ => _.slice(0, -8))
+                     .map(_ => {
+                       let n = new Network(_)
+                       return n.init(_).then(_ => n)
+                     }))
+}
 
 if (false) {
   let computation = network14.new_computation()

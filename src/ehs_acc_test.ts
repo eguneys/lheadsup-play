@@ -1,4 +1,4 @@
-import { network14, network28 } from './neural'
+import { networks_all, network14, network28 } from './neural'
 import { EncodeCardsForNN } from './neural'
 import { Card, split_cards, make_deal } from 'lheadsup'
 import { ehs } from '../src/mcts'
@@ -36,6 +36,23 @@ async function batched_neural_log(data: [string, number][]) {
   console.log((acc14.length / o14.length).toFixed(2), (acc28.length / o28.length).toFixed(2))
 }
 
+async function batched_neural_all_log(data: [string, number][]) {
+  let cards = data.map(_ => _[0])
+  let expected = data.map(_ => _[1])
+
+  let res = await Promise.all(networks_all.map(async function _(network) {
+    let output = await predict_strs(cards, network)
+
+
+    let o = output.map(_ => _[0])
+    let acc = o.filter((o, i) => Math.abs(expected[i] - o) < 0.09)
+
+    return `${network.name} ${(acc.length / o.length).toFixed(2)}`
+  }))
+
+  console.log(res.join('\n'))
+}
+
 async function acc() {
 
   let batch_size = 24
@@ -46,7 +63,8 @@ async function acc() {
     return [cards.join(''), expected] as [string, number]
   })
 
-  await batched_neural_log(batch)
+  //await batched_neural_log(batch)
+  await batched_neural_all_log(batch)
 }
 
 export async function test_acc_high_from_data() {
@@ -65,9 +83,10 @@ export async function test_acc_high_from_data() {
   }
 }
 
-export function test_acc_main(nb: number = 100) {
+export async function test_acc_main(nb: number = 100) {
   for (let i = 0; i < nb; i++) {
-    acc()
+    await acc()
+    console.log('\n')
   }
 }
 
