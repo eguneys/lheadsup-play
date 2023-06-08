@@ -52,14 +52,36 @@ The exact numbers can vary, the goal is to limit the luck as much as possible to
 
 At various stages of development, I benchmarked and tested the poker logic and of course found out and worked on some bugs. So this work also acts as a stress test.
 
-The simulation of this tournament is carried out by two "Poker Players". Player's take the state of the simulation by their point of view represented by the class `RoundNPov`, also the actions they are allowed to make called `Dests`. and return an action they want to make. Simulation playes the matches between players, on each match gives each player a chance to make an action when it's their turn to move, and collects the statistics for the tournament.
+The simulation of this tournament is carried out by two "Poker Players". Player's take the state of the poker round by their point of view represented by the class `RoundNPov`, also the actions they are allowed to make called `Dests`. and return an action they want to make. Simulation plays the matches between players, on each match, gives each player a chance to make an action when it's their turn to move, and collects the statistics for the tournament.
 
 So all there is left is to actually code the players. At this point I am also thinking about the website, if I can get a few interesting AI Players, I can challenge the users to play against these AI in the same headsup tournament style, and collect their statistics.
 
 There are the simple strategies like as silly as like always folding, or more decent like always calling, always min raising, or going berserk like always going all in. Another strategy is the mix player that randomly selects one player to act like, so like playing randomly.
 
-I built a benchmark that let's all players mash up and see how well they do against each other. The code is not well written as of yet, I would hope to improve the presentation as I see need.
+I built a benchmark that let's all players mash up and see how well they do against each other. The code is not well written but it's ok.
+
+There is no clear strategy or tactics that can be applied in a game of poker, as opposed to chess. It is often mentioned that good players get an edge in the long term. But the "long term" is vague. From what I understand we can built 2 types of advanced poker strategy that would eventually gets an edge against simple strategies and hopefully against human players as well. One is the often mentioned "Game Theory Optimal" game play, this will make the decisions based on pot odds and the strength of the hand, and gets an eventual edge against deviating players in the long term. This type of play is called unexploitable solid play. The second and our ultimate goal with this project, is player will consider the history of the rounds, and hopefully actually exploit the various tendencies opponent makes. This assumption is the whole point of all the efforts we put into this AI project. I have played poker mostly for fun and trust in my decent skills, but I have no experience if this would actually work. 
 
 ## A Serious attempt at MCTS Poker AI
 
+Now we enter the shady territory where ChatGPT sheds some light into our path.
+The MCTS algorithm as implemented in lc0 is swarming with multithreading and more statistics and math that is difficult to understand. So my first attempt to mostly copy it partly failed. And there isn't clear cut, well defined MCTS algorithms on the internet. So I asked ChatGPT which it responded with a nice example implementation in Javascript. 
 
+
+The actual MCTS after expanding a node that has no child, the value of the node is calculated by simulating a random playout starting from that node until the game ends, and using the game result as the value of the node. At first this gives a random result for the value of the node, considering the overall search the randomness is overcome by the number of iterations and giving more weight to promising children and eventually the best node will stand out. This is well explained by ChatGPT which there is a link to the conversation below. This algorithm forms the basis for our "Game Theory Optimal" Player.
+
+Each node in MCTS is associated with a game position. A Node is terminal if the game position is an end situation. In chess this could be a checkmate or a stalemate. In our case in poker, a game position is a round of headsup poker where cards are dealt and it is a player to act, or a terminal situation where one player is about to collect the pot in a round. So one MCTS only cares about a single round of poker, where if it's player's turn to act it plays a move randomly otherwise it's a terminal situation where it evaluates the value of that situation. But this will change with our second type of player which we will come to later.
+
+So our concern becomes how to evaluate the terminal situation of a poker round. Which is explained in detail [in this SO question on poker.stackexchange](https://poker.stackexchange.com/questions/12062/how-to-estimate-the-value-of-specific-end-round-situations-in-a-texas-holdem-he).
+
+
+After working out the details of implementing this version, now I have a decent looking player using naive MCTS. Unfortunately I could only test against simple strategies I mentioned above. It gets even against always all in raiser, which probably could be improved with some tweaks. But I've tweaked it plenty already and don't want to spend more time on it as of now. I would get a better feel if I could play with it myself, which I plan to do after building a front end and an actual server that can host these tournaments.
+
+As a side note, the MCTS folds plenty against always all in raiser, which goes allin preflop every hand. It calls with a pair of queens and probably some other pairs and folds Ace King. But I haven't tested throughly. Also it doesn't just blind out by folding, it calls an allin after getting below 2000 chips, which is a promising result. Although I am not sure if it actually is close to what I desired to accomplish as a "Game Theory Optimal" Player, I would probably get a better feel how strong, or at least interesting, it plays if I could play against it myself. It somewhat selects medium range raises which is considered interesting.
+
+Now we turn our attention to the journey of our final goal, and see if we can get an edge against this version of naive MCTS Player.
+
+
+## Interesting ChatGPT Conversations
+- [MCTS in Javascript](https://chat.openai.com/share/d287c5d9-5060-4562-8ebd-653e4fc37cdd)
+- [swarming word](https://chat.openai.com/share/180a4dd8-5592-4557-be0a-16816c8af838)
