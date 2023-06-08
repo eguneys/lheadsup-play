@@ -46,4 +46,20 @@ The cards are represented as strings like this `Ah` for Ace of Hearts. The evalu
 
 ## The Perfect Poker Strategy Playing AI
 
-We will play a Headsup Texas Hold'em Poker Tournament. Because we need to establish a baseline for calculating the skills. To get close to chess, we establish a headsup tournament which is poker played by 2 players. Let's say best out of 11 matches. Each match, 2 players starts with some chips, only one player wins by winning all of other player's chips by playing a series of rounds. Each round players are dealt cards and poker is played as usual. To let the rounds eventually end the blinds are increased every 10 rounds.
+We will play a Headsup Texas Hold'em Poker Tournament. Because we need to establish a baseline for calculating the skills. To get close to chess, we establish a headsup tournament which is poker played by 2 players. Let's say best out of 11 matches. Each match, 2 players starts with some chips, only one player wins by winning all of other player's chips by playing a series of rounds. Each round players are dealt cards and poker is played as usual. To let the rounds eventually end, the blinds are increased every 10 rounds.
+
+The exact numbers can vary, the goal is to limit the luck as much as possible to squeeze out the actual skill.
+
+At various stages of development, I benchmarked and tested the poker logic and of course found out and worked on some bugs. So this work also acts as a stress test.
+
+The simulation of this tournament is carried out by two "Poker Players". Player's take the state of the simulation by their point of view represented by the class `RoundNPov`, also the actions they are allowed to make called `Dests`. and return an action they want to make. Simulation playes the matches between players, on each match gives each player a chance to make an action when it's their turn to move, and collects the statistics for the tournament.
+
+So all there is left is to actually code the players. At this point I am also thinking about the website, if I can get a few interesting AI Players, I can challenge the users to play against these AI in the same headsup tournament style, and collect their statistics.
+
+There are the simple strategies like as silly as like always folding, or more decent like always calling, always min raising, or going berserk like always going all in. Another strategy is the mix player that randomly selects one player to act like, so like playing randomly.
+
+I built a benchmark that let's all players mash up and see how well they do against each other. The code is not well written as of yet, I would hope to improve the presentation as I see need.
+
+## A Serious attempt at MCTS Poker AI
+
+
