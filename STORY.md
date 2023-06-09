@@ -65,7 +65,7 @@ There is no clear strategy or tactics that can be applied in a game of poker, as
 ## A Serious attempt at MCTS Poker AI
 
 Now we enter the shady territory where ChatGPT sheds some light into our path.
-The MCTS algorithm as implemented in lc0 is swarming with multithreading and more statistics and math that is difficult to understand. So my first attempt to mostly copy it partly failed. And there isn't clear cut, well defined MCTS algorithms on the internet. So I asked ChatGPT which it responded with a nice example implementation in Javascript. You can find the conversation at ChatGPT section at the bottom.
+The MCTS algorithm as implemented in lc0 is swarming with multithreading and more statistics and math that is difficult to understand. So my first attempt to mostly copy it partly failed. And there isn't clear cut, well defined MCTS algorithms on the internet. So I asked ChatGPT which it responded with a nice example implementation in Javascript. You can find the conversation at ChatGPT section [at the bottom](#interesting-chatgpt-conversations).
 
 
 The actual MCTS, after expanding a node that has no child, the value of the node is calculated by simulating a random playout starting from that node until the game ends, and using the game result as the value of the node. At first this gives a random result for the value of the node, considering the overall search the randomness is overcome by the number of iterations and giving more weight to promising children and eventually the best node will stand out. This is well explained by ChatGPT which there is a link to the conversation below. This algorithm forms the basis for our "Game Theory Optimal" Player.
@@ -112,7 +112,7 @@ To summarize what is happening:
 
 ### Task #2 Evaluate the Hand Strength
 
-As mentioned previously, this function is slow as is currently used, so we will attempt at calculating this faster using neural networks.
+As mentioned previously, the `ehs` function to evaluate the hand strength, is slow as is currently used, so we will attempt at calculating this faster using neural networks.
 
 This is a simplified version of algorithm explained [in this wiki article](https://en.wikipedia.org/wiki/Effective_hand_strength_algorithm). At 4 phases of a poker round, preflop, flop, turn and river, player has two cards at hand, and 5 cards on the board are revealed in each phase. So given total of 7 cards, a player makes up his hand by selecting 5 cards that makes up the best hand. But hand strength takes into account not only unrevealed cards on the board, but also the opponents two cards that might possibly beat player's own hand also using the board. Thus the hand strength is calculated by simulating possible cards that are unknown by random selection 50 times and calculating the win ratio against those simulations.
 
@@ -123,7 +123,7 @@ The input to the model is slots for 7 cards 5 of them could be empty if it's on 
 As a beginner who have never done this before, I expect to get useful results as this is a lot similar to a simple image recognition task. Though, naturally not only you need to consider the hand you have made like two pair, one pair, high card, straight etc, but you also have to consider the possiblity of your opponent making a higher hand like, if there are 4 clubs on the board, it is more likely your set (which is normally very strong on headsup poker), might be beaten, so greatly reduces the common strength of your hand. Of course none of this logic matters to a neural network, as I am not exactly sure how it works in it's intricate details.
 
 
-I was feeling good when the value I get from the Accuracy metric on training in Python finally matched the model I built on Javascript. But it took a while of debugging to get there. But from that point on, I knew all I had to worry about was actually training a good network.
+I was feeling good when the value I get from the Accuracy metric on training in Python finally matched the model I built on Javascript. Because this means I've setup the network correctly and there is probably no more bugs in handling the data. But it took a while of debugging to get there. But from that point on, I knew all I had to worry about was actually training a good network.
 
 The model is training as this article is being written. But currently I couldn't pass 80% accuracy on test set, which is even lower as 70% on random hand data. 
 
