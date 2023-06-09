@@ -1,4 +1,4 @@
-import { networks_all, network14, network28 } from './neural'
+import { networks_all } from './neural'
 import { EncodeCardsForNN } from './neural'
 import { Card, split_cards, make_deal } from 'lheadsup'
 import { ehs } from '../src/mcts'
@@ -42,22 +42,6 @@ function batch_arr<A>(a: A[], batch_size: number) {
     }
   } 
   return res
-}
-
-async function batched_neural_log(data: [string, number][]) {
-  let cards = data.map(_ => _[0])
-  let expected = data.map(_ => _[1])
-
-  let output14 = await predict_strs(cards, network14)
-  let output28 = await predict_strs(cards, network28)
-
-  let o14 = output14.map(_ => _[0])
-  let acc14 = o14.filter((o, i) => Math.abs(expected[i] - o) < 0.09)
-
-  let o28 = output28.map(_ => _[0])
-  let acc28 = o28.filter((o, i) => Math.abs(expected[i] - o) < 0.09)
-
-  console.log((acc14.length / o14.length).toFixed(2), (acc28.length / o28.length).toFixed(2))
 }
 
 async function batched_neural_all_log(data: [string, number][]) {
@@ -111,7 +95,7 @@ export async function test_acc_high_from_data() {
     let batched = batch_arr(data, 100)
 
     for (let i = 0; i < batched.length; i++) {
-      await batched_neural_log(batched[i])
+      await batched_neural_all_log(batched[i])
     }
   }
 }

@@ -5,20 +5,10 @@ import { make_deal, split_cards } from 'lheadsup'
 import { filter_high } from './ehs_filter_train'
 import { test_acc_high_from_data } from './ehs_acc_test'
 
+await test_acc_main('f', 2)
+await test_acc_main('t', 2)
+await test_acc_main('r', 2)
 
-
-
-//filter_high()
-//test_acc_high_from_data()
-//test_neural_debug()
-
-//await test_acc_main('r', 2)
-//await test_acc_main('t', 2)
-//await test_acc_main('f', 2)
-//data_training_test_acc()
-//train_main()
-//ehs_train_main(8, 4, 1000)
-//
 function train_main() {
   console.log('Usage: pnpm start f kSampleNb phase') 
   let utilization = process.argv[2] === 'f' ? 1 : 0.1
@@ -27,5 +17,3 @@ function train_main() {
   parallel_work((cpus) => ehs_train_main(Math.ceil(kSampleNb / cpus), 
                                          phase, 10), utilization)
 }
-
-train_main()

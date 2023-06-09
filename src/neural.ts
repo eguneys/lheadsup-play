@@ -549,15 +549,6 @@ export class Network {
   }
 }
 
-let n14_name = 'ehs1_river_0x16-36000'
-let n28_name = 'ehs1_river_3x32-50000'
-
-let network14 = new Network(n14_name)
-await network14.init(n14_name)
-let network28 = new Network(n28_name)
-await network28.init(n28_name)
-export { network14, network28 }
-
 export const networks_all = await discover_all_networks()
 
 async function discover_all_networks() {
@@ -571,16 +562,16 @@ async function discover_all_networks() {
                      }))
 }
 
-if (false) {
-  let computation = network14.new_computation()
+export async function predict_strs(cards: string[], network?: Network) {
 
-  let input = EncodeCardsForNN(['2h', '3c'], ['Qc', 'Jh', '7d', '3s', '4d'])
-  computation.AddInput(input)
-  await computation.ComputeAsync()
-  console.log(computation.output)
-}
+  if (!network) {
+    network = networks_all[0]
+    if (!network) {
+      throw "No network files found"
+    }
+  }
 
-export async function predict_strs(cards: string[], network: Network = network14) {
+
   let computation = network.new_computation()
 
   cards.forEach(_ => {
