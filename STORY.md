@@ -150,4 +150,14 @@ Tackling with our real challenge, now we are more experienced.
 
 ## Interesting ChatGPT Conversations
 - [MCTS in Javascript](https://chat.openai.com/share/d287c5d9-5060-4562-8ebd-653e4fc37cdd)
+- [Compute Engine Scripts](https://chat.openai.com/share/88f0b611-3fba-4b75-9372-f7ae1a841764)
+- [Loss function](https://chat.openai.com/share/bf3503ad-d2ff-4b2d-b259-1f28ee5957dc)
+- [10 example networks](https://chat.openai.com/share/62c9603b-e166-4651-ab6f-1605cb90bc21)
 - [swarming word](https://chat.openai.com/share/180a4dd8-5592-4557-be0a-16816c8af838)
+
+
+## Support
+
+Please share your comments and suggestions here.
+Don't forget to follow this repo for news and updates on future progress.
+If you would like to donate, here's my patreon: https://www.patreon.com/eguneys
