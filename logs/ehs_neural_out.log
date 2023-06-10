@@ -1,0 +1,79 @@
+
+> lheadsup-play@1.0.0 start /home/eguneys/poker/lheadsup-play
+> node ./dist/main.js
+
+Flop
+ehs1_flop_3x32-36000 A: 0.79 O: 0.02
+ehs1_flop_3x32-50000 A: 0.83 O: 0.02
+ehs1_mix_3x32-36000 A: 0.80 O: 0.04
+ehs1_mix_3x32-50000 A: 0.80 O: 0.02
+ehs1_river_3x32-50000 A: 0.23 O: 0.61
+ehs1_river_3x32-72000 A: 0.23 O: 0.65
+ehs1_turn_3x32-100000 A: 0.57 O: 0.11
+ehs1_turn_3x32-108000 A: 0.58 O: 0.06
+ehs1_turn_3x32-50000 A: 0.45 O: 0.19
+ehs1_turn_3x32-72000 A: 0.62 O: 0.08
+
+
+ehs1_flop_3x32-36000 A: 0.73 O: 0.02
+ehs1_flop_3x32-50000 A: 0.78 O: 0.00
+ehs1_mix_3x32-36000 A: 0.76 O: 0.02
+ehs1_mix_3x32-50000 A: 0.80 O: 0.02
+ehs1_river_3x32-50000 A: 0.20 O: 0.64
+ehs1_river_3x32-72000 A: 0.17 O: 0.68
+ehs1_turn_3x32-100000 A: 0.49 O: 0.16
+ehs1_turn_3x32-108000 A: 0.59 O: 0.10
+ehs1_turn_3x32-50000 A: 0.47 O: 0.22
+ehs1_turn_3x32-72000 A: 0.56 O: 0.10
+
+
+Turn
+ehs1_flop_3x32-36000 A: 0.51 O: 0.11
+ehs1_flop_3x32-50000 A: 0.51 O: 0.09
+ehs1_mix_3x32-36000 A: 0.73 O: 0.02
+ehs1_mix_3x32-50000 A: 0.81 O: 0.01
+ehs1_river_3x32-50000 A: 0.33 O: 0.41
+ehs1_river_3x32-72000 A: 0.33 O: 0.42
+ehs1_turn_3x32-100000 A: 0.75 O: 0.02
+ehs1_turn_3x32-108000 A: 0.79 O: 0.01
+ehs1_turn_3x32-50000 A: 0.50 O: 0.16
+ehs1_turn_3x32-72000 A: 0.77 O: 0.01
+
+
+ehs1_flop_3x32-36000 A: 0.49 O: 0.16
+ehs1_flop_3x32-50000 A: 0.52 O: 0.13
+ehs1_mix_3x32-36000 A: 0.68 O: 0.03
+ehs1_mix_3x32-50000 A: 0.73 O: 0.00
+ehs1_river_3x32-50000 A: 0.43 O: 0.33
+ehs1_river_3x32-72000 A: 0.44 O: 0.33
+ehs1_turn_3x32-100000 A: 0.75 O: 0.01
+ehs1_turn_3x32-108000 A: 0.79 O: 0.01
+ehs1_turn_3x32-50000 A: 0.54 O: 0.09
+ehs1_turn_3x32-72000 A: 0.78 O: 0.01
+
+
+River
+ehs1_flop_3x32-36000 A: 0.29 O: 0.41
+ehs1_flop_3x32-50000 A: 0.30 O: 0.40
+ehs1_mix_3x32-36000 A: 0.59 O: 0.09
+ehs1_mix_3x32-50000 A: 0.76 O: 0.06
+ehs1_river_3x32-50000 A: 0.79 O: 0.04
+ehs1_river_3x32-72000 A: 0.78 O: 0.04
+ehs1_turn_3x32-100000 A: 0.40 O: 0.24
+ehs1_turn_3x32-108000 A: 0.39 O: 0.27
+ehs1_turn_3x32-50000 A: 0.63 O: 0.09
+ehs1_turn_3x32-72000 A: 0.38 O: 0.29
+
+
+ehs1_flop_3x32-36000 A: 0.27 O: 0.40
+ehs1_flop_3x32-50000 A: 0.25 O: 0.39
+ehs1_mix_3x32-36000 A: 0.64 O: 0.12
+ehs1_mix_3x32-50000 A: 0.81 O: 0.06
+ehs1_river_3x32-50000 A: 0.80 O: 0.04
+ehs1_river_3x32-72000 A: 0.84 O: 0.04
+ehs1_turn_3x32-100000 A: 0.48 O: 0.23
+ehs1_turn_3x32-108000 A: 0.45 O: 0.23
+ehs1_turn_3x32-50000 A: 0.63 O: 0.13
+ehs1_turn_3x32-72000 A: 0.45 O: 0.23
+
+

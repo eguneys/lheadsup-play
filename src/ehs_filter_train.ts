@@ -5,7 +5,7 @@ import { get_files } from './util'
 
 
 function filter_high_fn(data: [string, number]) {
-  let cards = split_cards(7, data[0])
+  let cards = split_cards(data[0], 7)
   let hand = cards.slice(0, 2)
   let board = cards.slice(2, 7)
 
@@ -42,7 +42,7 @@ export async function filter_high() {
 }
 
 function repack_to_trainingdata(data: [string, number]) {
-  let cards = split_cards(7, data[0])
+  let cards = split_cards(data[0], 7)
   let hand = cards.slice(0, 2)
   let board = cards.slice(2, 7)
 

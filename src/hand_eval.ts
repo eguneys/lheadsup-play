@@ -34,7 +34,7 @@ const encode_suit: Record<string, number> = {
 
 function encode_hand5(hand: string) {
   let res: number[] = []
-  let cards = split_cards(5, hand)
+  let cards = split_cards(hand, 5)
 
   cards.forEach((card, i) => {
     let [rank, suit] = card
@@ -56,7 +56,7 @@ type Card5 = [Card, Card, Card, Card, Card]
 function gen_data5() {
   let hand = make_deal(0)
 
-  let rank = rank5(split_cards(5, hand) as Card5)
+  let rank = rank5(split_cards(hand, 5) as Card5)
 
   let { rank_name, high_card } = rank
 

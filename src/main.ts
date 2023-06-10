@@ -5,6 +5,7 @@ import { make_deal, split_cards } from 'lheadsup'
 import { filter_high } from './ehs_filter_train'
 import { test_acc_high_from_data } from './ehs_acc_test'
 
+
 await test_acc_main('f', 2)
 await test_acc_main('t', 2)
 await test_acc_main('r', 2)

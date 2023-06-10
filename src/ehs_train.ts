@@ -83,7 +83,7 @@ function decode_board(board: number[]) {
 }
 
 function gen_h_b(fixed_phase: string): [Card[], Card[]] {
-  let cards = split_cards(7, make_deal(2))
+  let cards = split_cards(make_deal(2), 7)
 
   let hand = cards.slice(0, 2)
   let board = cards.slice(2, 7)
@@ -279,7 +279,7 @@ function sum(a: number[]) { return a.reduce((a, b) => a + b, 0) }
 
 function accuracy_test() {
   for (let k = 0; k < 100; k++) {
-    let cards = split_cards(7, make_deal(2))
+    let cards = split_cards(make_deal(2), 7)
 
     let hand = cards.slice(0, 2)
     let board = cards.slice(2, 7)

@@ -14,7 +14,7 @@ const phase_long: Record<string, string> = {
 }
 
 function split_cards_for_phase(phase: string) {
-  let cards = split_cards(7, make_deal(2))
+  let cards = split_cards(make_deal(2), 7)
   if (phase === 'p') {
     return [cards.slice(0, 2), []]
   }
@@ -70,6 +70,7 @@ async function acc(phase: string) {
     let [hand, board] = split_cards_for_phase(phase)
     let expected = ehs(hand, board)
 
+    //console.log(`["${hand.join('')}", "${board.join('')}", ${expected}],`)
     return [[...hand, ...board].join(''), expected] as [string, number]
   })
 
@@ -105,23 +106,14 @@ export async function test_neural_debug() {
   let res = [...Array(10).keys()].map(_ => make_deal(2))
 
   res = [
-    'JdKc7s9h5h3d8c',
-    '7c6c3sKd8d5d2d',
-    '5hKd3sQhJh9h4d',
-    '7s2c9sAh8h3dJc',
-    '7s6cQsKs5s9c3c',
-    '2s3hAs7h5h9d8c',
-    'As2hJd6dTc9c4c',
-    'Jc5cAs6s3d7c2c',
-    'Ks2c3sJh9h4hAc',
-    'Ad3d9h2hQd7d5c',
+    'Tc3d4s3s6c'
   ]
 
   //res = [...Array(100).keys()].map(_ => make_deal(2))
   for (let i = 0; i < res.length; i++) {
-    let cards = split_cards(7, res[i])
+    let cards = split_cards(res[i])
     let hand = cards.slice(0, 2).join('')
     let board = cards.slice(2, 7).join('')
-    console.log(`["${hand}", "${board}", ${await predict_strs([res[i]])}],`)
+    console.log(`["${hand}", "${board}", ${await predict_strs([cards.join('')])}],`)
   }
 }

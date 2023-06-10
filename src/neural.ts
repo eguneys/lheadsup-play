@@ -72,6 +72,7 @@ export function EncodeCardsForNN(hand: Card[], board: Card[]) {
 
   res[2 * 7 + 1] = 0xffffffff
 
+  //console.log(board, res)
   return res
 }
 
@@ -575,7 +576,7 @@ export async function predict_strs(cards: string[], network?: Network) {
   let computation = network.new_computation()
 
   cards.forEach(_ => {
-    let cards = split_cards(7, _)
+    let cards = split_cards(_)
     let input = EncodeCardsForNN(cards.slice(0, 2), cards.slice(2))
     computation.AddInput(input)
   })
