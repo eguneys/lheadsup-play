@@ -137,8 +137,8 @@ ehs1_river_3x32-100000 A: 0.58 O: 0.12
 ehs1_river_3x32-50000 A: 0.76 O: 0.05
 ehs1_river_6x64-108000 A: 0.74 O: 0.06
 ```
-Accuracy is the ratio of number of accurate samples that is output with a difference less than 0.09 than the target.
-Outlier is the ratio of number of outlier samples that is output with a difference greater than 0.2 than the target.
+Accuracy is the ratio of number of accurate samples that is output with a difference less than 0.09 than the target. Higher the better
+Outlier is the ratio of number of outlier samples that is output with a difference greater than 0.2 than the target. Lower the better
 Note that Output is the hand strength value in 0-1 range.
 
 `3x32` means 3 residual blocks and 32 filters. `50000` means it is trained for 50000 steps.
@@ -147,6 +147,12 @@ Note that Output is the hand strength value in 0-1 range.
 
 Tackling with our real challenge, now we are more experienced.
 
+After fixing all the bugs, please take a look at the final results of various networks: [here](logs/ehs_neural_out.log).
+
+Note that the game phase is written at the top, like Flop, Turn, River.
+As you can see `ehs1_mix_3x32-50000` performs the best at all phases. Because it is trained on all the data, while other networks are trained on data for specific phases. So I didn't need to split the data into phases after all.
+
+Now I am going to use this mix network and move on to our final challenge.
 
 ## Interesting ChatGPT Conversations
 - [MCTS in Javascript](https://chat.openai.com/share/d287c5d9-5060-4562-8ebd-653e4fc37cdd)
