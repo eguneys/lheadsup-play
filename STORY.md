@@ -110,6 +110,8 @@ To summarize what is happening:
 - A TFProcess class that builds the model, restores from a checkpoint, runs the training loop for some number of steps, saves the model's weights into a file.
 
 
+As I trained the network for this task, I've watched the accuracy slowly go up to 100%, which was fascinating, but as it turns out, there was probably some miscalculation on my part, but I didn't research on this task further, because it already served it's purpose of making sure training code was mostly working.
+
 ### Task #2 Evaluate the Hand Strength
 
 As mentioned previously, the `ehs` function to evaluate the hand strength, is slow as is currently used, so we will attempt at calculating this faster using neural networks.
@@ -118,7 +120,7 @@ This is a simplified version of algorithm explained [in this wiki article](https
 
 The best thing about this task is we can generate as many data samples as we like without dealing with noise or inaccurate data. The downside is, it's a little slow. All we have to do is generate 7 cards randomly calculate the hand strength, use this as one sample out of 10k samples, and pack this into one gzipped chunk of data, and do this 100 times, to get one million samples.
 
-The input to the model is slots for 7 cards 5 of them could be empty if it's on preflop phase, and all of them are filled on the river phase. Through some iterations, I figured I would get more accurate results if I built separate networks for each phase of the game, and use the according network on each specific phase. And the input encoding and network architecture doesn't have to change on any of the networks, we just train them on specific samples of data taken from that specific phase. Like river network would train with data that has all card slots filled, and preflop phase would train with data that has only 2 card slots filled.
+The input to the model is slots for 7 cards, 5 of them could be empty if it's on preflop phase, and all of them are filled on the river phase. Through some iterations, I figured I would get more accurate results if I built separate networks for each phase of the game, and use the according network on each specific phase. And the input encoding and network architecture doesn't have to change on any of the networks, we just train them on specific samples of data taken from that specific phase. Like river network would train with data that has all card slots filled, and preflop phase would train with data that has only 2 card slots filled.
 
 As a beginner who have never done this before, I expect to get useful results as this is a lot similar to a simple image recognition task. Though, naturally not only you need to consider the hand you have made like two pair, one pair, high card, straight etc, but you also have to consider the possiblity of your opponent making a higher hand like, if there are 4 clubs on the board, it is more likely your set (which is normally very strong on headsup poker), might be beaten, so greatly reduces the common strength of your hand. Of course none of this logic matters to a neural network, as I am not exactly sure how it works in it's intricate details.
 
@@ -149,10 +151,10 @@ Tackling with our real challenge, now we are more experienced.
 
 After fixing all the bugs, please take a look at the final results of various networks: [here](logs/ehs_neural_out.log).
 
-Note that the game phase is written at the top, like Flop, Turn, River.
+Explaing the logs, note that the game phase is written at the top, like Flop, Turn, River.
 As you can see `ehs1_mix_3x32-50000` performs the best at all phases. Because it is trained on all the data, while other networks are trained on data for specific phases. So I didn't need to split the data into phases after all.
 
-Now I am going to use this mix network and move on to our final challenge.
+To summarize, I achieved 80% accuracy, and 6% error. Now I am going to use this mix network and move on to our final challenge.
 
 ## Interesting ChatGPT Conversations
 - [MCTS in Javascript](https://chat.openai.com/share/d287c5d9-5060-4562-8ebd-653e4fc37cdd)
