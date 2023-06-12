@@ -238,13 +238,19 @@ class Node {
 
 class NodeToProcess {
 
-  static Visit = (node: Node, nb: number) => {
-    return new NodeToProcess(true, node, nb)
+  static Visit = (node: Node, depth: number) => {
+    return new NodeToProcess(false, node, depth, 1, 0)
   }
 
-  constructor(readonly is_visit: boolean, 
+  static Collision = (node: Node, depth: number, collision_count: number, max_count: number) => {
+    return new NodeToProcess(true, node, depth, collision_count, max_count)
+  }
+
+  constructor(readonly is_collision: boolean, 
               readonly node: Node,
-              readonly depth: number) {
+              readonly depth: number, 
+              readonly multivisit: number,
+              readonly max_count: number) {
   }
 
 
@@ -252,17 +258,12 @@ class NodeToProcess {
   hash!: number
   input_planes!: InputPlanes[]
   probabilities_to_cache!: number[]
-  multivisit!: number
   nn_queried!: boolean
   moves_to_visit!: Move[]
   v!: number
 
-  is_collision() {
-    return false
-  }
-
   is_extendable() {
-    return false
+    return !this.is_collision && !this.node.is_terminal() }
   }
 }
 
@@ -328,7 +329,29 @@ export class SearchBatched {
         }
 
         if (node.get_n() === 0 || node.is_terminal()) {
+          if (is_root_node) {
+            if (node.try_start_score_update()) {
+              cur_limit -= 1
+              this.minibatch.push(NodeToProcess.Visit(
+                node, current_path.length + base_depth))
+              completed_visits++;
+            }
+          }
 
+          if (cur_limit > 0) {
+            let max_count = 0
+            if (cur_limit === collision_limit && base_depth === 0 &&
+                max_limit > cur_limit) {
+              max_count = max_limit
+            }
+            receiver.push(NodeToProcess.Collision(
+              node, current_path.length + base_depth,
+              cur_limit, max_count))
+            completed_visits += cur_limit
+          }
+          node = node.get_parent()
+          current_path.pop()
+          continue
         }
 
         if (is_root_node) {
@@ -668,6 +691,8 @@ export class SearchBatched {
   computation!: NetworkComputation
 
   initialize_iteration(computation: NetworkComputation) {
+    this.computation = computation
+    this.minibatch = []
   }
 
   gather_minibatch() {
