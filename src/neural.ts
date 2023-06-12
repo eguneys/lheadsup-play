@@ -78,7 +78,7 @@ export function EncodeCardsForNN(hand: Card[], board: Card[]) {
 
 
 
-type InputPlanes = number[]
+export type InputPlanes = number[]
 
 const kInputPlanes = 16
 
@@ -281,7 +281,7 @@ function MakeNetwork(input: Input, weights: WeightsLegacy) {
 
 
 
-class NetworkComputation {
+export class NetworkComputation {
 
   input!: tf.Tensor
   output!: [number][]
@@ -290,6 +290,29 @@ class NetworkComputation {
 
   constructor(readonly network: Network) {
   }
+
+
+  async compute_async() {
+    return this.ComputeAsync()
+  }
+
+  add_input(hash: number,
+           input_planes: InputPlanes[],
+           probabilities_to_cache: number[]) {
+  }
+
+  add_input_by_hash(hash: number) {
+  }
+
+  get_cache_misses() {
+    return 0
+  }
+
+  get_Q_val(idx: number) {
+    return 0
+  }
+
+
 
   AddInput(input: InputPlanes) {
     this.raw_input.push(input)

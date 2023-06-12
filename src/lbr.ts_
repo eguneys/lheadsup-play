@@ -1,0 +1,31 @@
+/* https://arxiv.org/pdf/1612.07547.pdf */  
+function localbr(pi: Map<Hand, number>, s: PublicState[], h: Hand) {
+  let u = {}
+  let wp = WpRollout(h, pi, s)
+  let asked = asked_bet(s)
+  u['call'] = wp * pot(s) - (1 - wp) * asked
+
+  raises.forEach(a => {
+    let s_next = raise(s, a)
+
+    let fp = 0
+    let pi_next = new Map()
+    Object.keys(pi).forEach(op_hand => {
+      let p_fh = prob_fold(s_next, op_hand)
+      fp = fp + pi(op_hand) * p_fh
+
+      Object.keys(pi).forEach(h => {
+        pi_next.set(h, pi.get(h) * (1 - p_fh))
+      })
+    })
+    normalize(pi_next)
+
+    wp = WPRollout(h, pi_next, s)
+    u[a] = fp * pot(s) + (1 - fp) * (wp * (pot(s) + a) - (1 - wp) * (asked + a))
+  })
+  if (max(u) > 0) {
+    return argmax(u)
+  } else {
+    return 'fold'
+  }
+}
