@@ -68,11 +68,47 @@ function ComputeCpuct(N: number, is_root_node: boolean) {
 
 const MiniBatchSize = 256
 
+
+class NodeTree {
+
+  current_head!: Node
+  history: PositionHistory = new PositionHistory()
+
+
+  reset_to_position(fen: string) {
+    let board = Board.from_fen(fen)
+
+    this.current_head = new Node(undefined, 0)
+
+    this.history.reset(board)
+  }
+
+  get_current_head() {
+    return this.current_head
+  }
+
+  get_position_history() {
+    return this.history
+  }
+}
+
+
 function EncodePositionForNN(history: PositionHistory) {
   return []
 }
 
+class Move {
+
+  as_nn_index() {
+    return 0
+  }
+}
+
 class Board {
+
+  static from_fen = (fen: string) => {
+    return new Board()
+  }
 
   generate_legal_moves() {
     return []
@@ -90,11 +126,15 @@ class Board {
 
 class Position {
 
-  us_board: Board
-
-  constructor(readonly parent: Position, readonly m: Move) {
-    this.us_board = parent.us_board.apply_move(m)
+  static from_board = (board: Board) => {
+    return new Position(board)
   }
+
+  static from_move = (parent: Position, m: Move) => {
+    return new Position(parent.us_board.apply_move(m))
+  }
+
+  constructor(readonly us_board: Board) { }
 
   hash() {
     return HashCat(this.us_board.hash())
@@ -108,6 +148,11 @@ class Position {
 class PositionHistory {
 
   positions!: Position[]
+
+  reset(board: Board) {
+    this.positions = []
+    this.positions.push(Position.from_board(board))
+  }
 
   get length() {
     return this.positions.length
@@ -124,7 +169,7 @@ class PositionHistory {
   }
 
   append(m: Move) {
-    this.positions.push(new Position(this.last, m))
+    this.positions.push(Position.from_move(this.last, m))
   }
 
   trim(nb: number) {
@@ -132,12 +177,6 @@ class PositionHistory {
   }
 }
 
-class Move {
-
-  as_nn_index() {
-    return 0
-  }
-}
 
 class Edge {
 
@@ -791,9 +830,15 @@ export class SearchBatched {
 
   minibatch!: NodeToProcess[]
 
-  network!: Network
-
   computation!: CachingComputation
+
+
+  constructor(readonly tree: NodeTree,
+              readonly network: Network) {
+                this.root_node = tree.get_current_head()
+                this.played_history = tree.get_position_history()
+              }
+
 
   initialize_iteration(computation: NetworkComputation) {
     this.computation = new CachingComputation(computation)
