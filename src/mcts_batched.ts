@@ -29,6 +29,8 @@ function partialSort<A>(items: A[], k: number, a_is_smaller: (a: A, b: A) => boo
     return smallest;
 }
 
+type GameResult = 'whitewon' | 'blackwon'
+
 const Cpuct = 1.745
 const CpuctFactor = 3.894
 const CpuctBase = 38739
@@ -103,22 +105,24 @@ class Move {
 
 class Edge {
 
+  static from_move_list = (moves: Move[]) => {
+    return []
+  }
+
   move!: Move
 
   get_move() {
     return this.move
   }
-
-  get_or_spawn_node(node: Node) {
-    return node
-  }
-
 }
 
 class EdgeAndNode {
 
-  edge?: Edge
-  node?: Node
+  constructor(readonly edge?: Edge, readonly node?: Node) {}
+
+  reset() {
+  
+  }
 
   get_move() {
     return this.edge ? this.edge.get_move() : new Move()
@@ -129,111 +133,176 @@ class EdgeAndNode {
   }
 
   get_n() {
-    return 0
+    return this.node ? this.node.get_n() : 0
   }
 
   get_n_started() {
-    return 0
-  }
-
-  get_or_spawn_node(parent: Node) {
-    return new Node()
+    return this.node ? this.node.get_n_started() : 0
   }
 }
 
 class VisitedNodeIterator {
 
   get iterator(): Node[] {
-    return []
+    return this.parent_node.children.filter(n => !(n.get_n() === 0 && n.get_n_in_flight() === 0))
   }
+
+  constructor(readonly parent_node: Node) {}
 }
 
 class EdgeIterator {
 
+  get node() {
+    return this.parent_node.children[this.current_idx]
+  }
+
+  get edge() {
+    return this.node.edge
+  }
+
   get base() {
-    return new EdgeAndNode()
+    return new EdgeAndNode(this.edge, this.node)
   }
 
   advance() {
+    this.current_idx++
   }
 
-  get iterator(): EdgeAndNode[] {
-    return []
+  get iterator(): EdgeIterator[] {
+    return [...Array(this.parent_node.children.length - this.current_idx - 1).keys()].map(i => new EdgeIterator(this.parent_node, i + this.current_idx))
   }
+
+  get_or_spawn_node(parent: Node) {
+    if (this.node) {
+      return this.node
+    }
+    let new_node = new Node(this.parent_node, this.current_idx)
+    this.parent_node.children.splice(this.current_idx, 0, new_node)
+    return new_node
+  }
+
+  constructor(readonly parent_node: Node, 
+              public current_idx = 0) {}
 }
 
 class Node {
 
+  children: Node[] = []
+  _edges?: Edge[]
+
+  get siblings() {
+    if (this.parent) {
+      return this.parent.children
+    }
+  }
+
+  get edge() {
+    if (this.parent) {
+      return this.parent._edges![this.index]
+    }
+  }
+
+  n: number = 0
+  n_in_flight: number = 0
+  wl: number = 0
+  terminal_type: string
+
+  constructor(readonly parent: Node | undefined, readonly index: number) {
+    this.terminal_type = 'nonterminal'
+  }
+
   get visited_nodes() {
-    return new VisitedNodeIterator()
+    return new VisitedNodeIterator(this)
   }
 
   get edges() {
-    return new EdgeIterator()
+    return new EdgeIterator(this)
   }
 
   get_parent() {
-    return this
+    return this.parent
   }
 
-  cancel_score_update(nb: number) {
-  }
-
-  finalize_score_update(v: number, multivisit: number) {
-  }
-
-  adjust_for_terminal(v_delta: number, n_to_fix: number) {
+  adjust_for_terminal(v: number, multivisit: number) {
+    this.wl += multivisit * v / this.n
   }
 
   increment_n_in_flight(multivisit: number) {
+    this.n_in_flight += multivisit
+  }
+
+  finalize_score_update(v: number, multivisit: number) {
+    this.wl += multivisit * (v - this.wl) / (this.n + multivisit)
+
+    this.n += multivisit
+    this.n_in_flight -= multivisit
+  }
+
+  cancel_score_update(multivisit: number) {
+    this.n_in_flight -= multivisit
   }
 
   try_start_score_update() {
-    return false
+    if (this.n === 0 && this.n_in_flight > 0) {
+      return false
+    }
+    this.n_in_flight++;
+    return true
   }
 
-  make_terminal() {
+  make_terminal(result: GameResult, type = 'endofgame') {
+    this.terminal_type = type
+    if (result === 'whitewon') {
+      this.wl = 1
+    } else if (result === 'blackwon') {
+      this.wl = -1
+    }
   }
 
   create_edges(moves: Move[]) {
+    this._edges = Edge.from_move_list(moves)
   }
 
   is_terminal() {
-    return false
+    return this.terminal_type !== 'nonterminal'
   }
 
   get_visited_policy() {
-    return 0
+    let sum = 0
+    return sum
   }
 
   get_children_visits() {
-    return 0
+    return this.n > 0 ? this.n - 1 : 0
   }
 
   get_n() {
-    return 0
+    return this.n
+  }
+
+  get_n_in_flight() {
+    return this.n_in_flight
   }
 
   get_n_started() {
-    return 0
+    return this.n + this.n_in_flight
   }
 
   get_v() {
-    return 0
+    return this.wl
   }
 
   get_Q() {
-    return 0
+    return this.wl
   }
 
   get_num_edges() {
-    return 0
+    return this.num_edges
   }
 
-  index() {
-    return 0
+  get num_edges() {
+    return this._edges!.length
   }
-
 }
 
 class NodeToProcess {
@@ -263,7 +332,7 @@ class NodeToProcess {
   v!: number
 
   is_extendable() {
-    return !this.is_collision && !this.node.is_terminal() }
+    return !this.is_collision && !this.node.is_terminal()
   }
 }
 
@@ -279,7 +348,7 @@ export class SearchBatched {
     let legal_moves = board.generate_legal_moves()
 
     if (legal_moves.length === 0) {
-      node.make_terminal()
+      node.make_terminal('whitewon')
       return
     }
 
@@ -287,7 +356,7 @@ export class SearchBatched {
     node.create_edges(legal_moves)
   }
 
-  pick_nodes_to_extend_task(node: Node, 
+  pick_nodes_to_extend_task(node: Node | undefined, 
                             base_depth: number, 
                             collision_limit: number,
                             moves_to_base: Move[], 
@@ -328,12 +397,12 @@ export class SearchBatched {
           [current_path[current_path.length - 2]]
         }
 
-        if (node.get_n() === 0 || node.is_terminal()) {
+        if (node!.get_n() === 0 || node!.is_terminal()) {
           if (is_root_node) {
-            if (node.try_start_score_update()) {
+            if (node!.try_start_score_update()) {
               cur_limit -= 1
               this.minibatch.push(NodeToProcess.Visit(
-                node, current_path.length + base_depth))
+                node!, current_path.length + base_depth))
               completed_visits++;
             }
           }
@@ -345,17 +414,17 @@ export class SearchBatched {
               max_count = max_limit
             }
             receiver.push(NodeToProcess.Collision(
-              node, current_path.length + base_depth,
+              node!, current_path.length + base_depth,
               cur_limit, max_count))
             completed_visits += cur_limit
           }
-          node = node.get_parent()
+          node = node!.get_parent()
           current_path.pop()
           continue
         }
 
         if (is_root_node) {
-          node.increment_n_in_flight(cur_limit)
+          node!.increment_n_in_flight(cur_limit)
         }
 
         if (vtp_buffer.length > 0) {
@@ -366,21 +435,21 @@ export class SearchBatched {
         }
         vtp_last_filled.push(-1)
 
-        let max_needed = node.get_num_edges()
-        max_needed = Math.min(max_needed, node.get_n_started() + cur_limit + 2)
+        let max_needed = node!.get_num_edges()
+        max_needed = Math.min(max_needed, node!.get_n_started() + cur_limit + 2)
 
 
         for (let i =0; i < max_needed; i++) {
           current_util[i] = Number.MIN_VALUE
         }
 
-        for (let child of node.visited_nodes.iterator) {
-          let index = child.index()
+        for (let child of node!.visited_nodes.iterator) {
+          let index = child.index
           let q = child.get_Q()
           current_util[index] = q
         }
 
-        const fpu = GetFpu(node, is_root_node)
+        const fpu = GetFpu(node!, is_root_node)
 
         for (let i = 0; i < max_needed; i++) {
           if (current_util[i] === Number.MIN_VALUE) {
@@ -388,9 +457,9 @@ export class SearchBatched {
           }
         }
 
-        const cpuct = ComputeCpuct(node.get_n(), is_root_node)
+        const cpuct = ComputeCpuct(node!.get_n(), is_root_node)
         const puct_mult =
-          cpuct * Math.sqrt(Math.max(node.get_children_visits(), 1))
+          cpuct * Math.sqrt(Math.max(node!.get_children_visits(), 1))
 
         let cache_filled_idx = -1
 
@@ -405,7 +474,7 @@ export class SearchBatched {
           for (let idx = 0; idx < max_needed; idx++) {
             if (idx > cache_filled_idx) {
               if (idx === 0) {
-                cur_iters[idx] = node.edges
+                cur_iters[idx] = node!.edges
               } else {
                 cur_iters[idx] = cur_iters[idx - 1]
                 cur_iters[idx].advance()
@@ -430,10 +499,10 @@ export class SearchBatched {
               best = score
               best_idx = idx
               best_without_u = util
-              best_edge = cur_iters[idx].base
+              best_edge = cur_iters[idx]
             } else if (score > second_best) {
               second_best = score
-              second_best_edge = cur_iters[idx].base
+              second_best_edge = cur_iters[idx]
             }
             //if (can_exit) { break }
             if (nstarted === 0) {
@@ -465,7 +534,7 @@ export class SearchBatched {
           }
           visits_to_perform[visits_to_perform.length - 1][best_idx] += new_visits
           cur_limit -= new_visits
-          let child_node = best_edge!.get_or_spawn_node(node)
+          let child_node = best_edge!.get_or_spawn_node(node!)
 
           let decremented = false
           if (child_node.try_start_score_update()) {
@@ -485,7 +554,7 @@ export class SearchBatched {
           receiver.push(NodeToProcess.Visit(child_node, current_path.length + 1 + base_depth))
           completed_visits++
             receiver[receiver.length - 1].moves_to_visit = moves_to_path
-            receiver[receiver.length - 1].moves_to_visit.push(best_edge!.get_move())
+            receiver[receiver.length - 1].moves_to_visit.push(best_edge!.base.get_move())
           }
           if (best_idx > vtp_last_filled[vtp_last_filled.length - 1] &&
               (visits_to_perform[visits_to_perform.length - 1])[best_idx] > 0) {
@@ -508,25 +577,25 @@ export class SearchBatched {
       let found_child = false
       if (vtp_last_filled[vtp_last_filled.length - 1] > min_idx) {
         let idx = -1
-        for (let child of node.edges.iterator) {
+        for (let child of node!.edges.iterator) {
           idx++;
           if (idx > min_idx && 
               (visits_to_perform[visits_to_perform.length - 1])[idx] > 0) {
             if (moves_to_path.length !== current_path.length + base_depth) {
-              moves_to_path.push(child.get_move())
+              moves_to_path.push(child.base.get_move())
             } else {
-              moves_to_path[moves_to_path.length - 1]= child.get_move()
+              moves_to_path[moves_to_path.length - 1]= child.base.get_move()
             }
             current_path[current_path.length - 1] = idx
             current_path.push(-1)
-            node = child.get_or_spawn_node(node)
+            node = child.get_or_spawn_node(node!)
             found_child = true
             break
           }
         }
       }
       if (!found_child) {
-        node = node.get_parent()
+        node = node!.get_parent()
         if (moves_to_path.length !== 0) {
           moves_to_path.pop()
         }
@@ -540,7 +609,7 @@ export class SearchBatched {
   do_backup_update_single_node(node_to_process: NodeToProcess) {
     let { node } = node_to_process
 
-    if (node_to_process.is_collision()) {
+    if (node_to_process.is_collision) {
       return
     }
 
@@ -581,7 +650,7 @@ export class SearchBatched {
   }
 
   fetch_single_node_result(node_to_process: NodeToProcess, idx_in_computation: number) {
-    if (node_to_process.is_collision()) {
+    if (node_to_process.is_collision) {
       return 
     }
     let { node } = node_to_process
@@ -620,7 +689,7 @@ export class SearchBatched {
           }
           let moves = picked_node.probabilities_to_cache
           node.edges.iterator.forEach(edge => {
-            moves.push(edge.get_move().as_nn_index())
+            moves.push(edge.base.get_move().as_nn_index())
           })
         } else {
 
@@ -654,7 +723,7 @@ export class SearchBatched {
 
     let edges = []
     for (let edge of parent.edges.iterator) {
-      edges.push(edge)
+      edges.push(edge.base)
     }
 
     let middle = edges.length > count ? count : edges.length
@@ -721,7 +790,7 @@ export class SearchBatched {
       let non_collisions = 0
       for (let i = new_start; i < minibatch.length; i++) {
         let picked_node = minibatch[i]
-        if (picked_node.is_collision()) {
+        if (picked_node.is_collision) {
           continue
         }
         non_collisions++;
@@ -772,7 +841,7 @@ export class SearchBatched {
     let work_done = false
     this.minibatch.forEach(node_to_process => {
       this.do_backup_update_single_node(node_to_process)
-      if (!node_to_process.is_collision()) {
+      if (!node_to_process.is_collision) {
         work_done = true
       }
     })
@@ -785,10 +854,10 @@ export class SearchBatched {
 
   cancel_shared_collisions() {
     this.shared_collisions.forEach(entry => {
-      let node = entry[0]
+      let node: Node | undefined = entry[0]
       for (node = node.get_parent(); node !== this.root_node.get_parent();
-           node = node.get_parent()) {
-             node.cancel_score_update(entry[1])
+           node = node!.get_parent()) {
+             node!.cancel_score_update(entry[1])
            }
     })
     this.shared_collisions = []
@@ -798,7 +867,7 @@ export class SearchBatched {
     let { minibatch } = this
 
     minibatch.forEach(node_to_process => {
-      if (node_to_process.is_collision()) {
+      if (node_to_process.is_collision) {
         this.shared_collisions.push([node_to_process.node, node_to_process.multivisit])
       }
     })
