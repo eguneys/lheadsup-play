@@ -291,28 +291,9 @@ export class NetworkComputation {
   constructor(readonly network: Network) {
   }
 
-
-  async compute_async() {
-    return this.ComputeAsync()
+  GetBatchSize() {
+    return this.raw_input.length
   }
-
-  add_input(hash: number,
-           input_planes: InputPlanes[],
-           probabilities_to_cache: number[]) {
-  }
-
-  add_input_by_hash(hash: number) {
-  }
-
-  get_cache_misses() {
-    return 0
-  }
-
-  get_Q_val(idx: number) {
-    return 0
-  }
-
-
 
   AddInput(input: InputPlanes) {
     this.raw_input.push(input)
@@ -362,10 +343,8 @@ export class NetworkComputation {
     this.output = await (this.network.Compute(this.input) as tf.Tensor).array() as [number][]
   }
 
-  GetBatchSize() {
-  }
-
   GetQVal(sample: number) {
+    return this.output[sample][0]
   }
 }
 

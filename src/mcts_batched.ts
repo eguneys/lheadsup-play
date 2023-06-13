@@ -1,4 +1,5 @@
 import { InputPlanes, Network, NetworkComputation } from './neural'
+import { CachingComputation } from './cache_neural'
 
 function bisect<A>(items: A[], x: A, a_is_smaller: (a: A, b: A) => boolean, lo = 0, hi = items.length) {
   var mid;
@@ -27,6 +28,22 @@ function partialSort<A>(items: A[], k: number, a_is_smaller: (a: A, b: A) => boo
         }
     }
     return smallest;
+}
+
+function Hash(val: number) {
+  return 0xfad0d7f2fbb059f1 * (val + 0xbaad41cdcb839961) +
+    0x7acec0050bf82f43 * ((val >> 31) + 0xd571b3a92b1b2755);
+}
+
+function HashCat(hash: number, x = 0) {
+  hash ^= 0x299799adf0d95def + Hash(x) + (hash << 6) + (hash >> 2);
+  return hash;
+}
+
+function HashCatL(vl: number[]) {
+  let hash = 0
+  vl.forEach(x => hash = HashCat(hash, x))
+  return hash
 }
 
 type GameResult = 'whitewon' | 'blackwon'
@@ -61,14 +78,30 @@ class Board {
     return []
   }
 
+  apply_move(m: Move) {
+
+    return this
+  }
+
+  hash() {
+    return HashCatL([])
+  }
 }
 
 class Position {
 
-  board!: Board
+  us_board: Board
+
+  constructor(readonly parent: Position, readonly m: Move) {
+    this.us_board = parent.us_board.apply_move(m)
+  }
+
+  hash() {
+    return HashCat(this.us_board.hash())
+  }
 
   get_board() {
-    return this.board
+    return this.us_board
   }
 }
 
@@ -85,14 +118,17 @@ class PositionHistory {
   }
 
   hash_last() {
-    return 0
+    let hash = 0
+    this.positions.forEach(pos => hash = HashCat(hash, pos.hash()))
+    return hash
   }
 
-  append(move: Move) {
+  append(m: Move) {
+    this.positions.push(new Position(this.last, m))
   }
 
   trim(nb: number) {
-
+    this.positions.splice(nb)
   }
 }
 
@@ -106,10 +142,10 @@ class Move {
 class Edge {
 
   static from_move_list = (moves: Move[]) => {
-    return []
+    return moves.map(_ => new Edge(_))
   }
 
-  move!: Move
+  constructor(readonly move: Move) {}
 
   get_move() {
     return this.move
@@ -325,7 +361,7 @@ class NodeToProcess {
 
   is_cache_hit!: number
   hash!: number
-  input_planes!: InputPlanes[]
+  input_planes!: InputPlanes
   probabilities_to_cache!: number[]
   nn_queried!: boolean
   moves_to_visit!: Move[]
@@ -757,10 +793,10 @@ export class SearchBatched {
 
   network!: Network
 
-  computation!: NetworkComputation
+  computation!: CachingComputation
 
   initialize_iteration(computation: NetworkComputation) {
-    this.computation = computation
+    this.computation = new CachingComputation(computation)
     this.minibatch = []
   }
 
