@@ -21,6 +21,34 @@ export function min_raise_logic_for_allin(dests: Dests) {
   throw `Cant go "allin" ${dests.fen}`
 }
 
+
+export class Metrics extends Spectator {
+
+  _tournament_begin(p1: Player, p2: Player) {
+  }
+
+  _tournament_end() {
+  }
+
+  _dealt(round: RoundN) {
+  }
+
+  _dealer_act(round: RoundN, action: string) {
+  }
+
+  _match_begin(p1: Player, p2: Player) {
+  }
+
+  _increase_blinds(blinds: Chips, level: number) {
+  }
+
+  async _action(round: RoundN, action: string) {
+  }
+
+  _match_end(winner: Side) {
+  }
+}
+
 export class Logger extends Spectator {
 
   _tournament_begin(p1: Player, p2: Player) {
@@ -31,7 +59,10 @@ export class Logger extends Spectator {
     console.log(`Tournament ends`)
   }
 
-  _dealer_act(action: string) {
+  _dealt(round: RoundN) {
+  }
+
+  _dealer_act(round: RoundN, action: string) {
   }
 
   _match_begin(p1: Player, p2: Player) {
