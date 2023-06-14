@@ -17,8 +17,9 @@ let ps = [
 ]
 
 export function mash_main() {
-  mashup_players([...ps, mc])
+  //mashup_players([...ps, mc])
 
+  mashup_players([mc, mc])
   //mashup_players([mc, ps[0]])
   //mashup_players([ps[0], ps[2]])
   //xmash(mc, ps[1])
