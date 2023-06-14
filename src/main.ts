@@ -2,7 +2,7 @@ import { ehs_train_main } from './ehs_train'
 import { parallel_work } from './cluster'
 import { test_neural_debug, test_acc_main } from './ehs_acc_test'
 
-import { mash_main } from './mash'
+import { mash_main } from './mash2'
 
 mash_main()
 
