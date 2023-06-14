@@ -1,4 +1,4 @@
-import { MaxRaiser, MinRaiser, Caller, Folder, MCTSPlayer, Logger } from './players'
+import { MaxRaiser, MinRaiser, Caller, Folder, MCTSPlayer, Logger, Metrics } from './players'
 import { one_tournament, Player, Spectator } from './headsup_ai2'
 
 let simple = [
@@ -11,10 +11,11 @@ let simple = [
 let mc = new MCTSPlayer()
 
 let logger = new Logger()
+let metrics = new Metrics()
 
 export function mash_main() {
 
-  players([...simple, mc], [logger])
+  players([...simple, mc], [logger, metrics])
 }
 
 
@@ -36,5 +37,3 @@ async function players(players: Player[], specs: Spectator[]) {
 async function mash(p1: Player, p2: Player, specs: Spectator[]) {
   await one_tournament(p1, p2, specs)
 }
-
-

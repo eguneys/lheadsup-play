@@ -6,6 +6,8 @@ function increase_blinds(blinds: Chips) {
 
 export abstract class Spectator {
 
+  tournament_key?: string
+
   dealt(round: RoundN) {
     this._dealt(round)
   }
@@ -32,6 +34,7 @@ export abstract class Spectator {
 
 
   tournament_begin(p1: Player, p2: Player) {
+    this.tournament_key = [p1.name, p2.name].join('_vs_')
     this._tournament_begin(p1, p2)
   }
 

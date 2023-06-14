@@ -21,31 +21,144 @@ export function min_raise_logic_for_allin(dests: Dests) {
   throw `Cant go "allin" ${dests.fen}`
 }
 
+type MatchMetrics = [MatchPovMetric, MatchPovMetric][]
+
+
+class MatchMetricsLogger {
+  static log = (key: string, metrics: MatchMetrics) => {
+    console.log(`${key} Tournament metrics`)
+
+    metrics.forEach(([m1, m2], i) => {
+      console.log(`#${i+1}th Match`)
+
+      MatchPovMetricLogger.log(m1)
+      MatchPovMetricLogger.log(m2)
+      let winner = m1.winner ? m1.p1.name : m2.p1.name
+
+      console.log(`Winner ${winner}`)
+
+    })
+  }
+}
+
+
+class MatchPovMetricLogger {
+  static log = (metric: MatchPovMetric) => {
+  }
+}
+
+class MatchPovMetric {
+
+  static make = (p: Player, op: Player) => {
+    return new MatchPovMetric(p, op)
+  }
+
+  winner?: true
+  dealts: RoundNPov[] = []
+  dealer_acts: Map<string, RoundNPov[]> = new Map()
+  blinds: Chips[] = []
+  actions: Map<string, RoundNPov[]> = new Map()
+  facing_actions: Map<string, RoundNPov[]> = new Map()
+
+  constructor(readonly p1: Player, readonly opponent: Player) {}
+
+  dealt(round: RoundNPov) {
+    this.dealts.push(round)
+  }
+
+  dealer(round: RoundNPov, action: string) {
+    let acts = this.dealer_acts.get(action)
+    if (!acts) {
+      acts = []
+      this.dealer_acts.set(action, acts)
+    }
+    acts.push(round)
+  }
+
+  increase_blinds(blinds: Chips) {
+    this.blinds.push(blinds)
+  }
+
+  set_winner() {
+    this.winner = true
+  }
+
+  action(round: RoundNPov, action: string) {
+    let acts = this.actions.get(action)
+    if (!acts) {
+      acts = []
+      this.actions.set(action, acts)
+    }
+    acts.push(round)
+  }
+
+  facing_action(round: RoundNPov, action: string) {
+    let acts = this.facing_actions.get(action)
+    if (!acts) {
+      acts = []
+      this.facing_actions.set(action, acts)
+    }
+    acts.push(round)
+  }
+}
+
 
 export class Metrics extends Spectator {
 
+  tournament_metrics: Map<string, MatchMetrics> = new Map()
+  match_metrics!: MatchMetrics
+
+  get last_match_metrics() {
+    return this.match_metrics[this.match_metrics.length - 1]
+  }
+
+
   _tournament_begin(p1: Player, p2: Player) {
+    this.match_metrics = []
   }
 
   _tournament_end() {
+    this.tournament_metrics.set(this.tournament_key!, this.match_metrics)
+
+
+    MatchMetricsLogger.log(this.tournament_key!, this.match_metrics)
   }
 
   _dealt(round: RoundN) {
+    let [m1, m2] = this.last_match_metrics
+    m1.dealt(round.pov(1))
+    m2.dealt(round.pov(2))
   }
 
   _dealer_act(round: RoundN, action: string) {
+    let [m1, m2] = this.last_match_metrics
+    m1.dealer(round.pov(1), action)
+    m2.dealer(round.pov(2), action)
   }
 
   _match_begin(p1: Player, p2: Player) {
+    let match_metrics: [MatchPovMetric, MatchPovMetric] = [
+      MatchPovMetric.make(p1, p2),
+      MatchPovMetric.make(p2, p1)
+    ]
+    this.match_metrics.push(match_metrics)
   }
 
   _increase_blinds(blinds: Chips, level: number) {
+    let [m1, m2] = this.last_match_metrics
+    m1.increase_blinds(blinds)
+    m2.increase_blinds(blinds)
   }
 
   async _action(round: RoundN, action: string) {
+    let [m1, m2] = this.last_match_metrics
+    m1.action(round.pov(1), action)
+    m2.action(round.pov(2), action)
   }
 
   _match_end(winner: Side) {
+    let ms = this.last_match_metrics
+    ms[winner - 1].set_winner()
   }
 }
 
