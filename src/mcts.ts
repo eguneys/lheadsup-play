@@ -1,6 +1,7 @@
 import { hand_rank, set_hand_rank_eval, shuffle, cards, Stack, PotShare, Pot, Card, RoundN, RoundNPov } from 'lheadsup'
 import { Player } from './headsup_ai'
 import { Dests } from 'lheadsup'
+import { predict_strs } from './neural'
 
 const log_throw = (() => {
   let i = 0
@@ -40,8 +41,8 @@ function sum(a: number[]) {
 
 
 export class MCTSPlayer implements Player {
-  act(history: RoundNPov[], round: RoundNPov, dests: Dests) {
-    let res = Search.begin(round)
+  async act(history: RoundNPov[], round: RoundNPov, dests: Dests) {
+    let res = await Search.begin_async(round)
     console.log(round.fen, res)
     return res
   }
@@ -61,6 +62,15 @@ function filter_legal_moves_no_fold_if_check(a: Move[]) {
     return a.filter(_ => !_.startsWith('fold'))
   }
   return a
+}
+
+async function ehs_async(hand: Card[], board: Card[], nb = 50, use_cache = true) {
+  if (board.length === 0) {
+    return ehs(hand, board, nb, use_cache)
+  }
+
+
+  return await predict_strs([...hand, ...board])
 }
 
 let cache: any = {}
@@ -112,7 +122,13 @@ console.log(ehs(['Ac', 'Ad'], []))
 //console.log(ehs(['As', 'Kc'], []))
 //console.log(ehs(['As', 'Ks'], []))
 
-function model_value(round: RoundNPov) {
+async function model_value_async(round: RoundNPov) {
+  let strength = await ehs_async(round.stacks[0].hand!, round.middle)
+
+  return model_value(round, strength)
+}
+
+function model_value(round: RoundNPov, strength = ehs(round.stacks[0].hand!, round.middle)) {
   let { small_blind, pot, middle } = round
 
   let stacks = round.stacks.map(_ => _.stack)
@@ -139,7 +155,6 @@ function model_value(round: RoundNPov) {
 
   let reveal_factor = middle.length / 5
 
-  let strength = ehs(round.stacks[0].hand!, middle)
 
   let [r, a, b, c, d] = [0.05, 0.27, 0.18, 0.2, 0.3]
   
@@ -382,8 +397,16 @@ class State {
       this.after = this.after_model.pov(1)
     }
 
+  get is_me_who_just_moved() {
+    return this.before.stacks[0].state === '@'
+  }
+
   get value() {
     return model_value(this.after)
+  }
+
+  get value_async() {
+    return model_value_async(this.after)
   }
 
   get is_terminal() {
@@ -502,10 +525,10 @@ class History {
 
 export class Search {
 
-  static begin = (round: RoundNPov) => {
+  static begin_async = async (round: RoundNPov) => {
     let state = State.make_from_round(round)
     let search = new Search(state)
-    let edge = search.search()
+    let edge = await search.search()
     //console.log(search.root.edges)
     return edge.move
   }
@@ -567,8 +590,11 @@ export class Search {
     })
   }
 
-  simulate_random_playout() {
+
+  async simulate_random_playout_async() {
     let current_state = this.history.last
+
+    let { is_me_who_just_moved } = current_state
 
     let i = 0
     while (!current_state.is_terminal) {
@@ -586,7 +612,32 @@ export class Search {
     }
    */
     //console.log(i, current_state.after.fen, current_state.move, current_state.value)
-    return current_state.value
+    let value = await current_state.value_async
+    return is_me_who_just_moved ? value : - value
+  }
+
+  simulate_random_playout() {
+    let current_state = this.history.last
+
+    let { is_me_who_just_moved } = current_state
+
+    let i = 0
+    while (!current_state.is_terminal) {
+      i++
+      const random_action = select_random_move(current_state.get_legal_moves())
+      if (!random_action) {
+        break
+      }
+      current_state = current_state.perform_action(random_action)
+    }
+    /*
+    if (i === 0 && current_state.value > 0.6) {
+      console.log('i === 0', current_state.before.fen, current_state.after.fen)
+      throw 3
+    }
+   */
+    //console.log(i, current_state.after.fen, current_state.move, current_state.value)
+    return is_me_who_just_moved ? current_state.value : - current_state.value
   }
 
 
@@ -595,6 +646,7 @@ export class Search {
     while (node !== undefined) {
       node.visits++;
       node.values += value
+      value = -value
       node = node.parent?.before
     }
   }
@@ -621,7 +673,7 @@ export class Search {
   }
 
 
-  search() {
+  async search() {
     let nb_iterations = 0
     while (true) {
       const [selected_node, moves_to_node] = this.selection()
@@ -630,7 +682,7 @@ export class Search {
       let values = [...Array(5)].map(() => this.simulate_random_playout())
       let value = sum(values) / 5
      */
-      let value = this.simulate_random_playout()
+      let value = await this.simulate_random_playout()
       //let value = this.simulate_random_playout()
 
       if (moves_to_node[0] !== 'fold') {
@@ -676,59 +728,58 @@ function model_tests() {
   console.log(round.fen, model_value(round))
 }
 
-function tests() {
+async function tests() {
 
   let res,
   round
 
   round = RoundNPov.from_fen(`85-170 2 | @3366 AdKd call-85-85 / a0 allin-170-0-2294 $!`)
-  res = Search.begin(round)
+  res = await Search.begin_async(round)
   console.log(round.fen, res)
 
-  throw 2;
 
   round = RoundNPov.from_fen(`10-20 2 | @2652 QsQh call-10-10 / a0 allin-20-0-3308 $!`)
-  res = Search.begin(round)
+  res = await Search.begin_async(round)
   console.log(round.fen, res)
 
 
   for (let i = 0; i < 3; i++) {
     round = RoundNPov.from_fen(`10-20 2 | @4876 TsTc / i1024 raise-0-0-20 $ 80-12 !9d9s2c`)
-    res = Search.begin(round)
+    res = await Search.begin_async(round)
     console.log(round.fen, res)
   }
 
 
 
   round = RoundNPov.from_fen(`10-20 1 | @2130 9d5d raise-0-20-340 / i1790 raise-20-340-340 $ 1020-12 !6d5sAs4hJc`)
-  res = Search.begin(round)
+  res = await Search.begin_async(round)
   console.log(round.fen, res)
 
 
 
   round = RoundNPov.from_fen(`10-20 1 | @2884 9s3c check-0 / i2864 raise-0-0-20 $ 232-12 !8sTd6sAh`)
-  res = Search.begin(round)
+  res = await Search.begin_async(round)
   console.log(round.fen, res)
 
   round = RoundNPov.from_fen(`10-20 1 | @2800 5h4h raise-0-0-160 / i2640 raise-0-160-160 $ 80-12 !TsQdQc`)
-  res = Search.begin(round)
+  res = await Search.begin_async(round)
   console.log(round.fen, res)
 
   round = RoundNPov.from_fen(`10-20 1 | @2600 2s4h raise-0-0-240 / i2560 raise-0-240-240 $ 120-12 !TdTc6hQs`)
-  res = Search.begin(round)
+  res = await Search.begin_async(round)
   console.log(round.fen, res)
 
 
 
   round = RoundNPov.from_fen(`10-20 1 | @2960 TdQh / i2960 $ 80-12 !2cJdKc`)
-  res = Search.begin(round)
+  res = await Search.begin_async(round)
   console.log(round.fen, res)
 
 
   round = RoundNPov.from_fen(`10-20 2 | @2990 KsQd sb-0-0-10 / i2980 bb-0-0-20 $!`)
-  res = Search.begin(round)
+  res = await Search.begin_async(round)
   console.log(round.fen, res)
 }
 
 //model_tests()
-//tests()
+tests()

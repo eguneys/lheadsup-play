@@ -17,7 +17,7 @@ let ps = [
 ]
 
 export function mash_main() {
-  //mashup_players([...ps, mc])
+  mashup_players([...ps, mc])
 
   //mashup_players([ps[0], ps[2]])
   //mashup_players([mc, ps[2]])
@@ -29,13 +29,13 @@ function colorize(color: number, output: string) {
   return ['\033[', color, 'm', output, '\033[0m'].join('')
 }
 
-function mash(p1: any, p2: any, mash_res: any) {
+async function mash(p1: any, p2: any, mash_res: any) {
   let [name, desc, i1] = p1
   let [name2, desc2, i2] = p2
  
   let header = colorize(93, `${name} vs ${name2} `)
 
-  let { res_nb_deals, res, res_stats } = one_tournament(i1, i2)
+  let { res_nb_deals, res, res_stats } = await one_tournament(i1, i2)
   let total = res[0] + res[1]
   let a_wins = Math.floor(res[0] / total * 100)
   let b_wins = Math.floor(res[1] / total * 100)
@@ -95,29 +95,24 @@ function xmash(p1: any, p2: any) {
   }
 }
 
-function mashup_players(players: any = ps) {
+async function mashup_players(players: any = ps) {
   let mash_res: any = {
     domination: [],
     even: [],
     edge: []
   }
 
-  /*
-  players.forEach((p: any) => {
-    console.log(`${p[0]} vs ${p[0]}`)
-    mash(p, p, mash_res)
-  })
- */
+  for (let i = 0; i < players.length; i++) {
+    for (let i2 = i+1; i2 < players.length; i2++) {
+      let p1 = players[i],
+        p2 = players[i2]
 
-  players.forEach((p1: any, i: number) =>
-                  players.forEach((p2: any, i2: number) => {
-                    if (i < i2) {
-                      //process.stdout.write(colorize(93, `${p1[0]} vs ${p2[0]} `))
-                      mash(p1, p2, mash_res)
-                      console.log(mash_res.header)
-                      console.log(mash_res.more_stats)
-                    }
-                  }))
+      //process.stdout.write(colorize(93, `${p1[0]} vs ${p2[0]} `))
+      await mash(p1, p2, mash_res)
+      console.log(mash_res.header)
+      console.log(mash_res.more_stats)
+    }
+  }
 
   let domination = mash_res.domination.join('\n')
   let even = mash_res.even.join('\n')

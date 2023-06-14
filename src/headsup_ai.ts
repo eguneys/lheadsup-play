@@ -71,7 +71,7 @@ export class RandomMixPlayer implements Player {
     this.turn_i = 0
   }
 
-  act(history: RoundNPov[], round: RoundNPov, dests: Dests) {
+  async act(history: RoundNPov[], round: RoundNPov, dests: Dests) {
     let { players, i, turn_i } = this
     let res = players[turn_i].act(history, round, dests)
 
@@ -90,7 +90,7 @@ export class MaxRaiser implements Player {
 
   static make = () => new MaxRaiser()
 
-  act(history: RoundNPov[], round: RoundNPov, dests: Dests) {
+  async act(history: RoundNPov[], round: RoundNPov, dests: Dests) {
     if (dests.raise) {
       let { match, min_raise, cant_match, cant_minraise } = dests.raise
       let max_raise = round.stacks[0].stack - match
@@ -115,7 +115,7 @@ export class MinRaiser implements Player {
 
   static make = () => new MinRaiser()
 
-  act(history: RoundNPov[], round: RoundNPov, dests: Dests) {
+  async act(history: RoundNPov[], round: RoundNPov, dests: Dests) {
     return min_raise_logic_for_allin(dests)
   }
 }
@@ -124,7 +124,7 @@ export class Caller implements Player {
 
   static make = () => new Caller()
 
-  act(history: RoundNPov[], round: RoundNPov, dests: Dests) {
+  async act(history: RoundNPov[], round: RoundNPov, dests: Dests) {
     if (dests.call) {
       return `call ${dests.call.match}`
     } else if (dests.check) {
@@ -138,16 +138,16 @@ export class Folder implements Player {
 
   static make = () => new Folder()
 
-  act(history: RoundNPov[], round: RoundNPov, dests: Dests) {
+  async act(history: RoundNPov[], round: RoundNPov, dests: Dests) {
     return 'fold'
   }
 }
 
 export interface Player {
-  act(history: RoundNPov[], round: RoundNPov, dests: Dests): string
+  act(history: RoundNPov[], round: RoundNPov, dests: Dests): Promise<string>
 }
 
-export function one_tournament(p1: Player, p2: Player) {
+export async function one_tournament(p1: Player, p2: Player) {
 
   let ps = [p1, p2]
   let seats = [0, 1]
@@ -160,8 +160,8 @@ export function one_tournament(p1: Player, p2: Player) {
     // swap seats
     seats = [seats[1], seats[0]]
 
-    let { nb_deals, winner, stats } = one_match(ps[seats[0]], ps[seats[1]])
-    console.log(nb_deals)
+    let { nb_deals, winner, stats } = await one_match(ps[seats[0]], ps[seats[1]])
+    //console.log(nb_deals)
     res_nb_deals.push(nb_deals[0])
     if (seats[0] === 0) {
       res_stats[0] = merge(res_stats[0], stats[0])
@@ -249,7 +249,7 @@ class MatchStats {
   ) {}
 }
 
-export function one_match(p1: Player, p2: Player): MatchResult {
+export async function one_match(p1: Player, p2: Player): Promise<MatchResult> {
 
   let wins: SideChips[] = [],
     backs: SideChips[] = [],
@@ -274,6 +274,7 @@ export function one_match(p1: Player, p2: Player): MatchResult {
         i = 0
         let new_blinds = increase_blinds(small_blind)
         h.game = new GameN(new_blinds, button, seats)
+        console.log(`Deal #${nb_deals[0]} New blinds ${new_blinds}`)
       }
 
 
@@ -319,7 +320,7 @@ export function one_match(p1: Player, p2: Player): MatchResult {
         let _ = h.round!.fen
         //console.log(_, round_dests.fen)
 
-        let action = players[action_side - 1].act(history.map(_ => _.pov(action_side)), round.pov(action_side), round_dests)
+        let action = await players[action_side - 1].act(history.map(_ => _.pov(action_side)), round.pov(action_side), round_dests)
 
         h.round_act(action)
 
@@ -331,6 +332,7 @@ export function one_match(p1: Player, p2: Player): MatchResult {
     }
   }
 
+  console.log(`Match end`)
 
   let winner = h.winner
   let stats: [MatchStats, MatchStats] = [

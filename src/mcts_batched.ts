@@ -1,4 +1,4 @@
-import { InputPlanes, Network, NetworkComputation } from './neural'
+import { EncodeCardsForNN, InputPlanes, Network, NetworkComputation } from './neural'
 import { CachingComputation } from './cache_neural'
 
 function bisect<A>(items: A[], x: A, a_is_smaller: (a: A, b: A) => boolean, lo = 0, hi = items.length) {
@@ -68,7 +68,6 @@ function ComputeCpuct(N: number, is_root_node: boolean) {
 
 const MiniBatchSize = 256
 
-
 class NodeTree {
 
   current_head!: Node
@@ -92,8 +91,10 @@ class NodeTree {
   }
 }
 
-
 function EncodePositionForNN(history: PositionHistory) {
+  //let { hand, board } = history.last.us_board
+
+  //return EncodeCardsForNN(hand, board)
   return []
 }
 
@@ -759,9 +760,7 @@ export class SearchBatched {
           picked_node.nn_queried = true
           const hash = history.hash_last()
           picked_node.hash = hash
-          if (!picked_node.is_cache_hit) {
-            picked_node.input_planes = EncodePositionForNN(history)
-          }
+          picked_node.input_planes = EncodePositionForNN(history)
           let moves = picked_node.probabilities_to_cache
           node.edges.iterator.forEach(edge => {
             moves.push(edge.base.get_move().as_nn_index())
