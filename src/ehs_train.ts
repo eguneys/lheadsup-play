@@ -2,7 +2,7 @@ import fs from 'fs'
 import zlib from 'node:zlib'
 import { decompress_gzip } from './util'
 
-import { ehs } from './mcts'
+import { ehs } from './cards'
 import { hand_rank, Card, make_deal, split_cards } from 'lheadsup'
 
 const kSampleNb = 10000

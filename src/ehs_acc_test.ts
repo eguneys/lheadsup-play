@@ -1,7 +1,7 @@
 import { networks_all } from './neural'
 import { EncodeCardsForNN } from './neural'
 import { Card, split_cards, make_deal } from 'lheadsup'
-import { ehs } from '../src/mcts'
+import { ehs } from './cards'
 import { predict_strs } from './neural'
 import { get_files } from './util'
 import { read_from_data_training } from './ehs_train'

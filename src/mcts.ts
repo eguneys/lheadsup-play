@@ -2,6 +2,7 @@ import { hand_rank, set_hand_rank_eval, shuffle, cards, Stack, PotShare, Pot, Ca
 import { Player } from './headsup_ai'
 import { Dests } from 'lheadsup'
 import { predict_strs } from './neural'
+import { ehs, card_outs } from './cards'
 
 const log_throw = (() => {
   let i = 0
@@ -69,58 +70,8 @@ async function ehs_async(hand: Card[], board: Card[], nb = 50, use_cache = true)
     return ehs(hand, board, nb, use_cache)
   }
 
-
-  return await predict_strs([...hand, ...board])
+  return (await predict_strs([[...hand, ...board].join('')]))[0][0]
 }
-
-let cache: any = {}
-
-export function ehs(hand: Card[], board: Card[], nb = 50, use_cache = true) {
-  let ahead = 0
-
-  let i = cache[hand.join('') + board.join('')]
-  if (use_cache && i) {
-    return i
-  }
-
-  for (let i = 0; i < nb; i++) {
-    let op = card_outs([...board, ...hand], 2)
-    let board_rest = card_outs([...hand, ...board, ...op], 5 - board.length)
-
-    let my_hand = [...hand, ...board, ...board_rest]
-    let op_hand = [...op, ...board, ...board_rest]
-
-    if (hand_rank(my_hand).hand_eval >= hand_rank(op_hand).hand_eval) {
-      ahead ++;
-    }
-  }
-  let res = ahead / nb
-
-  if (use_cache) {
-    cache[hand.join('') + board.join('')] = res
-  }
-  return res
-}
-
-/*
-let res: any = []
-for (let i = 0; i < 100; i++) {
-  let hand = card_outs([], 2)
-  res.push([hand.join(''), ehs(hand, [])])
-}
-res.sort((a: any, b: any) => a[1] - b[1])
-console.log(res)
-console.log(ehs(['Kc', 'Qd'], []))
-console.log(ehs(['Ac', 'Qd'], []))
-console.log(ehs(['Ac', 'Ad'], []))
-*/
-//console.log(ehs(['Td', 'Qh'], ['2c', 'Jd', 'Kc']))
-//
-//console.log(ehs(['2s', '4h'], ['Td','Tc','6h','Qs']))
-// console.log(ehs(['9s', '3c'], ['8s','Td','6s','Ah']))
-//console.log(ehs(['Qs', 'Qc'], []))
-//console.log(ehs(['As', 'Kc'], []))
-//console.log(ehs(['As', 'Ks'], []))
 
 async function model_value_async(round: RoundNPov) {
   let strength = await ehs_async(round.stacks[0].hand!, round.middle)
@@ -305,11 +256,6 @@ function play_move(round: RoundN, move: Move) {
     }
   }
 }
-
-function card_outs(excludes: Card[], n: number) {
-  return shuffle(cards.filter(_ => !excludes.includes(_))).slice(0, n)
-}
-
 function copy_pot(pot: Pot): Pot {
   return new Pot(pot.chips, pot.sides.slice(0), pot.side_pots?.map(_ => copy_pot(_)))
 }
@@ -613,6 +559,7 @@ export class Search {
    */
     //console.log(i, current_state.after.fen, current_state.move, current_state.value)
     let value = await current_state.value_async
+    //console.log(is_me_who_just_moved, current_state.after.fen, current_state.move, value)
     return is_me_who_just_moved ? value : - value
   }
 
@@ -682,7 +629,7 @@ export class Search {
       let values = [...Array(5)].map(() => this.simulate_random_playout())
       let value = sum(values) / 5
      */
-      let value = await this.simulate_random_playout()
+      let value = await this.simulate_random_playout_async()
       //let value = this.simulate_random_playout()
 
       if (moves_to_node[0] !== 'fold') {
@@ -728,10 +675,28 @@ function model_tests() {
   console.log(round.fen, model_value(round))
 }
 
+async function new_model_tests() {
+  async function log_m(fen: string) {
+    let round = RoundNPov.from_fen(fen)
+    console.log(round.fen, await model_value_async(round))
+  }
+  await log_m(`10-20 2 | s0 As3h / s3504 2d6h $ 2040-2side 456-12 !TsQdKs raise 228-0` )
+  throw 3
+}
+
 async function tests() {
 
   let res,
   round
+
+
+  for (let i = 0; i < 5; i++) {
+    round = RoundNPov.from_fen(`35-70 2 | @4628 AcKd sb-0-0-35 / i1267 bb-0-0-70 $!`)
+    res = await Search.begin_async(round)
+    console.log(round.fen, res)
+  }
+
+  throw 3
 
   round = RoundNPov.from_fen(`85-170 2 | @3366 AdKd call-85-85 / a0 allin-170-0-2294 $!`)
   res = await Search.begin_async(round)
@@ -781,5 +746,24 @@ async function tests() {
   console.log(round.fen, res)
 }
 
+async function new_search_tests() {
+
+  async function log_search(fen: string) {
+    let round = RoundNPov.from_fen(fen)
+    let res = await Search.begin_async(round)
+    console.log(round.fen, res)
+  }
+
+  `
+  10-20 2 | @1238 As3h sb-0-0-10 / i4732 bb-0-0-20 $! raise 10-60
+  10-20 2 | @1168 As3h raise-10-10-60 / i4612 raise-20-60-60 $! raise 60-440
+  10-20 2 | @668 As3h raise-80-60-440 / i3732 raise-140-440-440 $! fold
+  `
+  await log_search(`10-20 2 | @668 As3h raise-80-60-440 / i3732 raise-140-440-440 $!`)
+  throw 2
+}
+
 //model_tests()
-tests()
+//await tests()
+//await new_search_tests()
+//await new_model_tests()
