@@ -6,7 +6,6 @@
 - hand strength vs action
 - variance 
 
-
 - per match
 - 1/2/.../10/total
 - per street
