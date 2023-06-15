@@ -1,6 +1,7 @@
 import { Side, Chips, Dests, RoundNPov, RoundN } from 'lheadsup'
 import { Spectator, Player } from './headsup_ai2'
 import { Search } from './mcts'
+import { RangeStats } from './sbuffer'
 
 export function min_raise_logic_for_allin(dests: Dests) {
   if (dests.raise) {
@@ -44,6 +45,10 @@ class MatchMetricsLogger {
 
 class MatchPovMetricLogger {
   static log = (metric: MatchPovMetric) => {
+    let res = new RangeStats(metric.data)
+    res.fill_async().then(() => {
+      console.log(res.ranges)
+    })
   }
 }
 
@@ -54,25 +59,17 @@ class MatchPovMetric {
   }
 
   winner?: true
-  dealts: RoundNPov[] = []
-  dealer_acts: Map<string, RoundNPov[]> = new Map()
   blinds: Chips[] = []
-  actions: Map<string, RoundNPov[]> = new Map()
-  facing_actions: Map<string, RoundNPov[]> = new Map()
+  data: RoundNPov[] = []
 
   constructor(readonly p1: Player, readonly opponent: Player) {}
 
   dealt(round: RoundNPov) {
-    this.dealts.push(round)
+    this.data.push(round)
   }
 
   dealer(round: RoundNPov, action: string) {
-    let acts = this.dealer_acts.get(action)
-    if (!acts) {
-      acts = []
-      this.dealer_acts.set(action, acts)
-    }
-    acts.push(round)
+    this.data.push(round)
   }
 
   increase_blinds(blinds: Chips) {
@@ -84,21 +81,11 @@ class MatchPovMetric {
   }
 
   action(round: RoundNPov, action: string) {
-    let acts = this.actions.get(action)
-    if (!acts) {
-      acts = []
-      this.actions.set(action, acts)
-    }
-    acts.push(round)
+    this.data.push(round)
   }
 
   facing_action(round: RoundNPov, action: string) {
-    let acts = this.facing_actions.get(action)
-    if (!acts) {
-      acts = []
-      this.facing_actions.set(action, acts)
-    }
-    acts.push(round)
+    this.data.push(round)
   }
 }
 

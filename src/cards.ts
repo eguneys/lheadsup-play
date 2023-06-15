@@ -1,8 +1,23 @@
 import { Card, shuffle, hand_rank, cards } from 'lheadsup'
+import { predict_strs } from './neural'
+
+export async function ehs_async(hand: Card[], board: Card[], nb = 50, use_cache = true) {
+  if (board.length === 0) {
+    return ehs(hand, board, nb, use_cache)
+  }
+
+  return (await predict_strs([[...hand, ...board].join('')]))[0][0]
+}
+
+
+
 
 export function card_outs(excludes: Card[], n: number) {
   return shuffle(cards.filter(_ => !excludes.includes(_))).slice(0, n)
 }
+
+
+
 
 let cache: any = {}
 

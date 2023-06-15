@@ -2,7 +2,7 @@ import { hand_rank, set_hand_rank_eval, shuffle, cards, Stack, PotShare, Pot, Ca
 import { Player } from './headsup_ai'
 import { Dests } from 'lheadsup'
 import { predict_strs } from './neural'
-import { ehs, card_outs } from './cards'
+import { ehs, ehs_async, card_outs } from './cards'
 
 const log_throw = (() => {
   let i = 0
@@ -63,14 +63,6 @@ function filter_legal_moves_no_fold_if_check(a: Move[]) {
     return a.filter(_ => !_.startsWith('fold'))
   }
   return a
-}
-
-async function ehs_async(hand: Card[], board: Card[], nb = 50, use_cache = true) {
-  if (board.length === 0) {
-    return ehs(hand, board, nb, use_cache)
-  }
-
-  return (await predict_strs([[...hand, ...board].join('')]))[0][0]
 }
 
 async function model_value_async(round: RoundNPov) {
