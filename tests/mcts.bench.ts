@@ -1,7 +1,6 @@
 import { it, expect, bench } from 'vitest'
 import { split_cards, make_deal } from 'lheadsup'
-import { ehs } from '../src/mcts'
-import { predict_strs } from '../src/neural'
+import { ehs, ehs_async } from '../src/cards'
 
 bench('preflop', () => {
   let cards = split_cards(make_deal(2), 7)
@@ -16,7 +15,5 @@ bench('river', () => {
 
 bench('preflop neural', async () => {
   let cards = split_cards(make_deal(2), 7)
-
-  await predict_strs([cards.slice(0, 5).join('')])
-
+  ehs_async(cards.slice(0, 2), cards.slice(2, 5))
 }, { iterations: 500 })

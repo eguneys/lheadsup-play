@@ -1,6 +1,21 @@
 import { Card, shuffle, hand_rank, cards } from 'lheadsup'
 import { predict_strs } from './neural'
 
+const dummy = 'AhAhAhAhAh'
+const pad_flop = (_: string) => _.length === 4 ? dummy : _
+
+export async function ehs_async_batched(hb: [Card[], Card[]][], nb = 50, use_cache = true) {
+  let res = (await predict_strs(hb.map(_ => pad_flop([..._[0], ..._[1]].join('')))))
+  .map(_ => _[0])
+
+  hb.forEach((hb, i) => {
+    if (hb[1].length === 0) {
+      res[i] = ehs(hb[0],  hb[1], nb, use_cache)
+    }
+  })
+  return res
+}
+
 export async function ehs_async(hand: Card[], board: Card[], nb = 50, use_cache = true) {
   if (board.length === 0) {
     return ehs(hand, board, nb, use_cache)

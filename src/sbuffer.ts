@@ -1,5 +1,5 @@
 import { RoundNPov } from 'lheadsup'
-import { ehs, ehs_async } from './cards'
+import { ehs, ehs_async, ehs_async_batched } from './cards'
 
 type EmptyRange = undefined
 type RawRange = [number, number]
@@ -28,13 +28,30 @@ function get_phase(n: RoundNPov) {
   return 'deal'
 }
 
-async function get_hs(n: RoundNPov) {
+async function get_hs_slow(n: RoundNPov) {
   let hand = n.stacks[0].hand
   let board = n.middle
 
   if (hand && board) {
     return mix_range(await ehs_async(hand, board), hand_strengths)
   }
+}
+
+const dummy_hand = ['Ah', 'Ah']
+async function get_hs_batched(n: RoundNPov[]) {
+  let dummies: number[] = []
+  let res: (number | undefined)[] = await ehs_async_batched(n.map((n, i) => {
+    let hand = n.stacks[0].hand
+    let board = n.middle
+    if (hand && board) {
+      return [hand, board]
+    } else {
+      dummies.push(i)
+      return [dummy_hand, []]
+    }
+  }))
+  dummies.forEach(i => res[i] = undefined)
+  return res.map(i => i && mix_range(i, hand_strengths))
 }
 
 function mix_range<A>(n: number, a: A[]) {
@@ -103,38 +120,46 @@ export class RangeStats {
       this.ranges.set(skey, res)
     }
 
+    const copy_range_hs_to_street = async () => {
+      let phase_range = phases.flatMap(phase => 
+                     (this.ranges.get(phase) as UnionRange)
+                     .map(range => [phase, range] as [string, RawRange]))
 
-    const copy_range_for_first_async = async (key: string, skeys: string[], filter: (_: RoundNPov) => Promise<any>) => {
-      let ranges = this.ranges.get(key) as UnionRange
-      for (let range of ranges) {
-        let r = await filter(this.data[range[0]])
-        if (skeys.includes(r)) {
-          let bucket = this.ranges.get(r) as UnionRange | undefined
+      let phase_hs = await get_hs_batched(phase_range.map(p_r => this.data[p_r[1][0]]))
+
+      phase_hs.forEach((hs, i) => {
+        let range = phase_range[i][1]
+        if (hs) {
+          let bucket = this.ranges.get(hs) as UnionRange | undefined
           if (!bucket) {
             bucket = []
-            this.ranges.set(r, bucket)
+            this.ranges.set(hs, bucket)
           }
           bucket.push(range)
+
         }
-      }
+      })
+
     }
 
     fill_array(phases, get_phase)
     fill_array(action_buckets, get_action_bucket)
     fill_array(game_results, get_game_result)
 
-    await Promise.all(phases.flatMap(phase => {
-      return copy_range_for_first_async(phase, hand_strengths, get_hs)
-    }))
+    await copy_range_hs_to_street()
 
     this.add_union_ranges('total', game_results)
     this.add_union_ranges('lowmed', ['low', 'med'])
+
     this.add_intersect_ranges('call_lowmed_river', 
                               ['call', 'lowmed', 'river'])
 
     this.add_intersect_ranges('call_med_sloss_river', 
                               ['call', 'med', 'sloss', 'river'])
 
+
+    this.add_intersect_ranges('call_med_preflop',
+                              ['call', 'med', 'preflop'])
   }
 }
 
@@ -158,7 +183,7 @@ function find_ranges_consecutive<A>(data: A[], filter: (_: A) => boolean): Union
 }
 
 function is_empty_range(a: Range): a is EmptyRange {
-  return a === undefined
+  return a === undefined || a.length === 0
 }
 
 function is_union_range(a: RawRange | UnionRange): a is UnionRange {
@@ -166,8 +191,9 @@ function is_union_range(a: RawRange | UnionRange): a is UnionRange {
 }
 
 function intersect_ranges(a: Range[]): Range {
-  return a.reduce((a, b) => a ?? intersect_range(a, b), undefined)
+  return a.reduce((a, b) => a ?? intersect_range(a, b))
 }
+
 
 function union_ranges(a: Range[]) {
   return a.reduce(union_range, [])
@@ -195,16 +221,22 @@ function intersect_range(a: Range, b: Range): Range {
 
 function union_range(a: Range, b: Range): Range {
   if (is_empty_range(a)) {
+    if (is_empty_range(b)) {
+      return undefined
+    }
     return b
   }
   if (is_empty_range(b)) {
     return a
   }
   if (is_union_range(a)) {
-    return union_ranges(a.map(a => union_range(a, b)))
+    if (is_union_range(b)) {
+      return [...a, ...b]
+    }
+    return [...a, b]
   }
   if (is_union_range(b)) {
-    return union_ranges(b.map(b => union_range(a, b)))
+    return [a, ...b]
   }
   return [a, b]
 }

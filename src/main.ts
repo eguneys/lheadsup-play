@@ -6,8 +6,7 @@ import { mash_main } from './mash2'
 
 mash_main()
 
-
-
+//test_phases()
 
 
 async function test_phases() {

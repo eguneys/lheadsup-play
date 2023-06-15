@@ -26,27 +26,28 @@ type MatchMetrics = [MatchPovMetric, MatchPovMetric][]
 
 
 class MatchMetricsLogger {
-  static log = (key: string, metrics: MatchMetrics) => {
+  static log = async (key: string, metrics: MatchMetrics) => {
     console.log(`${key} Tournament metrics`)
 
-    metrics.forEach(([m1, m2], i) => {
+    for (let i = 0; i < metrics.length; i++) {
+      let [m1, m2] = metrics[i]
       console.log(`#${i+1}th Match`)
 
-      MatchPovMetricLogger.log(m1)
-      MatchPovMetricLogger.log(m2)
+      await MatchPovMetricLogger.log(m1)
+      await MatchPovMetricLogger.log(m2)
       let winner = m1.winner ? m1.p1.name : m2.p1.name
 
       console.log(`Winner ${winner}`)
 
-    })
+    }
   }
 }
 
 
 class MatchPovMetricLogger {
-  static log = (metric: MatchPovMetric) => {
+  static log = async (metric: MatchPovMetric) => {
     let res = new RangeStats(metric.data)
-    res.fill_async().then(() => {
+    return res.fill_async().then(() => {
       console.log(res.ranges)
     })
   }
@@ -104,11 +105,11 @@ export class Metrics extends Spectator {
     this.match_metrics = []
   }
 
-  _tournament_end() {
+  async _tournament_end() {
     this.tournament_metrics.set(this.tournament_key!, this.match_metrics)
 
 
-    MatchMetricsLogger.log(this.tournament_key!, this.match_metrics)
+    await MatchMetricsLogger.log(this.tournament_key!, this.match_metrics)
   }
 
   _dealt(round: RoundN) {
@@ -155,7 +156,7 @@ export class Logger extends Spectator {
     console.log(`Tournament ${p1.name} vs ${p2.name} begins.`)
   }
 
-  _tournament_end() {
+  async _tournament_end() {
     console.log(`Tournament ends`)
   }
 

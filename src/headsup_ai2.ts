@@ -38,14 +38,14 @@ export abstract class Spectator {
     this._tournament_begin(p1, p2)
   }
 
-  tournament_end() {
-    this._tournament_end()
+  async tournament_end() {
+    await this._tournament_end()
   }
 
 
 
   abstract _tournament_begin(p1: Player, p2: Player): void;
-  abstract _tournament_end(): void;
+  abstract _tournament_end(): Promise<void>;
 
   abstract _dealt(round: RoundN): void;
   abstract _dealer_act(round: RoundN, action: string): void;
@@ -208,5 +208,5 @@ export async function one_tournament(p1: Player, p2: Player, specs: Spectator[] 
 
   p1.tournament_end()
   p2.tournament_end()
-  specs.forEach(s => s.tournament_end())
+  await Promise.all(specs.map(s => s.tournament_end()))
 }
