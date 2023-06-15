@@ -1,11 +1,12 @@
 import { RoundNPov } from 'lheadsup'
 import { ehs, ehs_async, ehs_async_batched } from './cards'
 
-type EmptyRange = undefined
+type AllRange = 1
+type EmptyRange = 0
 type RawRange = [number, number]
 type UnionRange = RawRange[]
 
-type Range = EmptyRange | RawRange | UnionRange
+type Range = AllRange | EmptyRange | RawRange | UnionRange
 
 const phases = ['deal', 'preflop', 'flop', 'turn', 'river']
 const hand_strengths = ['low', 'med', 'high']
@@ -98,11 +99,11 @@ export class RangeStats {
   }
 
   add_union_ranges(key: string, ranges: string[]) {
-    this.ranges.set(key, union_ranges(ranges.map(_ => this.ranges.get(_)!)))
+    this.ranges.set(key, union_ranges(ranges.map(_ => this.ranges.get(_) ?? 0)))
   }
 
   add_intersect_ranges(key: string, ranges: string[]) {
-    this.ranges.set(key, intersect_ranges(ranges.map(_ => this.ranges.get(_)!)))
+    this.ranges.set(key, intersect_ranges(ranges.map(_ => this.ranges.get(_)?? 0)))
   }
 
 
@@ -163,11 +164,17 @@ export class RangeStats {
     })
     this.add_intersect_ranges(key, key.split('_'))
     if (alt_key) {
-      this.ranges.set(alt_key, this.ranges.get(key))
+      this.ranges.set(alt_key, this.ranges.get(key)!)
     }
   }
-}
 
+
+  samples(key: string, nb: number = 1) {
+    return solidify_range(this.ranges.get(key) ?? 0)
+    .slice(0, nb)
+    .map(range => range.map(i => this.data[i]))
+  }
+}
 
 function find_ranges_consecutive<A>(data: A[], filter: (_: A) => boolean): UnionRange {
   let res = []
@@ -187,8 +194,28 @@ function find_ranges_consecutive<A>(data: A[], filter: (_: A) => boolean): Union
   return res
 }
 
+function solidify_range(a: Range): number[][] {
+  if (is_all_range(a) || is_empty_range(a)) {
+    return []
+  }
+  if (is_union_range(a)) {
+    return a.map(_ => solidify_range(_)[0])
+  }
+  return [expand(a)]
+}
+
+function expand(a: RawRange): number[] {
+  let [lb, hb] = a
+
+  return [...Array(hb - lb).keys()].map(_ => _ + lb)
+}
+
+function is_all_range(a: Range): a is AllRange {
+  return a === 1
+}
+
 function is_empty_range(a: Range): a is EmptyRange {
-  return a === undefined || a.length === 0
+  return a === 0 || a !== 1 && a.length === 0
 }
 
 function is_union_range(a: RawRange | UnionRange): a is UnionRange {
@@ -196,38 +223,51 @@ function is_union_range(a: RawRange | UnionRange): a is UnionRange {
 }
 
 function intersect_ranges(a: Range[]): Range {
-  return a.reduce((a, b) => a ?? intersect_range(a, b))
+  return a.reduce(intersect_range, 1)
 }
 
 
 function union_ranges(a: Range[]) {
-  return a.reduce(union_range, [])
+  return a.reduce(union_range, 0)
 }
 
 function intersect_range(a: Range, b: Range): Range {
+  if (is_all_range(a)) {
+    return b
+  }
+  if (is_all_range(b)) {
+    return a
+  }
   if (is_empty_range(a) || is_empty_range(b)) {
-    return undefined
+    return 0
   }
   if (is_union_range(a)) {
-    return union_ranges(a.map(a => intersect_range(a, b)).filter(Boolean) as Range[])
+    if (is_union_range(b)) {
+      return a.flatMap(a => b.map(b => intersect_range(a, b) as RawRange).filter(Boolean))
+    }
+
+    return a.map(a => intersect_range(a, b) as RawRange).filter(Boolean)
   }
   if (is_union_range(b)) {
-    return union_ranges(b.map(b => intersect_range(a, b)).filter(Boolean) as Range[])
+    return intersect_range(b, a)
   }
   let [la, ha] = a
   let [lb, hb] = b
 
   if (la >= hb || lb >= ha) {
-    return undefined
+    return 0
   }
 
   return [Math.max(la, lb), Math.min(ha, hb)]
 }
 
 function union_range(a: Range, b: Range): Range {
+  if (is_all_range(a) || is_all_range(b)) {
+    return 1
+  }
   if (is_empty_range(a)) {
     if (is_empty_range(b)) {
-      return undefined
+      return 0
     }
     return b
   }

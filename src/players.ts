@@ -58,7 +58,10 @@ class MatchPovMetricLogger {
     res.add_uk(`raise_low+med_swin_preflop+river`)
     res.add_uk(`allin_low+high_preflop`)
 
-    console.log(res.ranges)
+    res.add_uk(`high_sloss`)
+    res.add_uk(`low_fwin`)
+
+    console.log(res.samples(`high_sloss`, 8)?.map(_ => _.map(_ => _.fen)))
   }
 }
 
