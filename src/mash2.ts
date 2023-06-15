@@ -17,7 +17,8 @@ export function mash_main() {
 
   //players([new Folder(), new Folder()], [logger, metrics])
   //players([new Caller(), new Caller()], [logger, metrics])
-  players([...simple, mc], [logger, metrics])
+  players([mc, new MinRaiser()], [logger, metrics])
+  //players([...simple, mc], [logger, metrics])
 }
 
 

@@ -62,6 +62,9 @@ function mix_range<A>(n: number, a: A[]) {
 function get_action_bucket(n: RoundNPov) {
   let bet = n.stacks[0].bet
   if (bet) {
+    if (bet.desc === 'raise') {
+      return 'raiseMin'
+    }
     return bet.desc
   }
 }
@@ -69,20 +72,22 @@ function get_action_bucket(n: RoundNPov) {
 function get_game_result(n: RoundNPov) {
   let { shares } = n
   if (shares) {
-    let { win, back, swin } = shares[0]
+    for (let i = 0; i < shares.length; i++) {
+      let { win, back, swin } = shares[i]
 
-    if (win) {
-      if (win[0] === 1) {
-        return 'fwin'
-      } else {
-        return 'floss'
+      if (win) {
+        if (win[0] === 1) {
+          return 'fwin'
+        } else {
+          return 'floss'
+        }
       }
-    }
-    if (swin) {
-      if (swin[0] === 1) {
-        return 'swin'
-      } else {
-        return 'sloss'
+      if (swin) {
+        if (swin[0] === 1) {
+          return 'swin'
+        } else {
+          return 'sloss'
+        }
       }
     }
   }
@@ -185,12 +190,18 @@ function find_ranges_consecutive<A>(data: A[], filter: (_: A) => boolean): Union
     if (!filter(data[s])) {
       continue
     }
-    for (let i = s + 1; i < data.length; i++) {
+    let i = s + 1
+    for (; i < data.length; i++) {
       if (!filter(data[i])) {
         res.push([s, i] as RawRange)
         s = i
         break
       }
+    }
+    
+    if (s !== i) {
+      res.push([s, data.length] as RawRange)
+      break
     }
   }
 
@@ -289,3 +300,7 @@ function union_range(a: Range, b: Range): Range {
   return [a, b]
 }
 
+
+
+function test() {
+ }

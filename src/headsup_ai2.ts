@@ -149,13 +149,13 @@ export async function one_match(p1: Player, p2: Player, specs: Spectator[] = [])
         specs.forEach(s => s.increase_blinds(new_blinds, level))
       }
 
-
       h.game_act('deal')
-      h.round_act(`deal ${make_deal(2)}`)
 
       p1.dealt(h.round!.pov(1))
       p2.dealt(h.round!.pov(2))
       specs.forEach(s => s.dealt(h.round!))
+
+      h.round_act(`deal ${make_deal(2)}`)
     }
 
     const { round, round_dests } = h

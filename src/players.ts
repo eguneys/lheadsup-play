@@ -46,6 +46,7 @@ class MatchMetricsLogger {
         tables.push({ field, [p1]: `${nb1}`, [p2]: `${nb2}` })
       }
 
+      console.log(m1.data.map(_ => _.fen))
       console.table(tables)
       console.log(`Winner ${winner}`)
 
@@ -60,6 +61,7 @@ class MatchPovMetricSampleAggregator {
     await res.fill_async()
 
     let basic = [
+      `deal`,
       `swin`,
       `sloss`,
       `fwin`,
@@ -69,7 +71,8 @@ class MatchPovMetricSampleAggregator {
       `low_fwin`,
       `check`,
       `fold`,
-      `call`
+      `call`,
+      'raiseMin'
     ]
 
     let samples = [
