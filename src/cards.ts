@@ -5,6 +5,9 @@ const dummy = 'AhAhAhAhAh'
 const pad_flop = (_: string) => _.length === 4 ? dummy : _
 
 export async function ehs_async_batched(hb: [Card[], Card[]][], nb = 50, use_cache = true) {
+  if (hb.length === 0) {
+    return []
+  }
   let res = (await predict_strs(hb.map(_ => pad_flop([..._[0], ..._[1]].join('')))))
   .map(_ => _[0])
 

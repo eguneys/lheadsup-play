@@ -15,8 +15,9 @@ let metrics = new Metrics()
 
 export function mash_main() {
 
-  players([new Caller(), new Caller()], [logger, metrics])
-  //players([...simple, mc], [logger, metrics])
+  //players([new Folder(), new Folder()], [logger, metrics])
+  //players([new Caller(), new Caller()], [logger, metrics])
+  players([...simple, mc], [logger, metrics])
 }
 
 

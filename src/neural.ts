@@ -567,6 +567,10 @@ async function discover_all_networks() {
 
 export async function predict_strs(cards: string[], network?: Network) {
 
+  if (cards.length === 0) {
+    throw "Pass some cards to predict"
+  }
+
   if (!network) {
     network = networks_all[0]
     if (!network) {

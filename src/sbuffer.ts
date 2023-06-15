@@ -9,7 +9,7 @@ type UnionRange = RawRange[]
 type Range = AllRange | EmptyRange | RawRange | UnionRange
 
 const phases = ['deal', 'preflop', 'flop', 'turn', 'river']
-const hand_strengths = ['low', 'med', 'high']
+const hand_strengths = ['low', 'med', 'high', 'nuts']
 const action_buckets = ['fold', 'check', 'call', 'raiseMin', 'raiseMed', 'allin']
 const game_results = ['fwin', 'floss', 'swin', 'sloss']
 
@@ -169,9 +169,12 @@ export class RangeStats {
   }
 
 
-  samples(key: string, nb: number = 1) {
+  samples(key: string) {
+    if (!this.ranges.has(key)) {
+      this.add_uk(key)
+    }
+
     return solidify_range(this.ranges.get(key) ?? 0)
-    .slice(0, nb)
     .map(range => range.map(i => this.data[i]))
   }
 }

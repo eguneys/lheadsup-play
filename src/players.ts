@@ -33,10 +33,20 @@ class MatchMetricsLogger {
       let [m1, m2] = metrics[i]
       console.log(`#${i+1}th Match`)
 
-      await MatchPovMetricLogger.log(m1)
-      await MatchPovMetricLogger.log(m2)
+      let s1 = await MatchPovMetricSampleAggregator.log(m1)
+      let s2 = await MatchPovMetricSampleAggregator.log(m2)
       let winner = m1.winner ? m1.p1.name : m2.p1.name
 
+      let p1 = m1.p1.name
+      let p2 = m2.p1.name
+
+      let tables = []
+      for (let [field, nb1] of s1) {
+        let nb2 = s2.get(field)!
+        tables.push({ field, [p1]: `${nb1}`, [p2]: `${nb2}` })
+      }
+
+      console.table(tables)
       console.log(`Winner ${winner}`)
 
     }
@@ -44,24 +54,37 @@ class MatchMetricsLogger {
 }
 
 
-class MatchPovMetricLogger {
+class MatchPovMetricSampleAggregator {
   static log = async (metric: MatchPovMetric) => {
     let res = new RangeStats(metric.data)
     await res.fill_async()
 
-    res.add_uk(`fold_med+high_preflop+river`)
-    res.add_uk(`check+call_high_preflop+river`)
-    res.add_uk(`call_low+med_river`)
-    res.add_uk(`call_med_sloss_river`)
-    res.add_uk(`raise_low+med_s_preflop+river`)
-    res.add_uk(`raise_low+med_fwin_preflop+river`)
-    res.add_uk(`raise_low+med_swin_preflop+river`)
-    res.add_uk(`allin_low+high_preflop`)
+    let basic = [
+      `swin`,
+      `sloss`,
+      `fwin`,
+      `floss`,
+      `nuts_sloss`,
+      `low_swin`,
+      `low_fwin`,
+      `check`,
+      `fold`,
+      `call`
+    ]
 
-    res.add_uk(`high_sloss`)
-    res.add_uk(`low_fwin`)
+    let samples = [
+      `fold_med+high_preflop+river`,
+      `check+call_high_preflop+river`,
+      `call_low+med_river`,
+      `call_med_sloss_river`,
+      `raise_low+med_s_preflop+river`,
+      `raise_low+med_fwin_preflop+river`,
+      `raise_low+med_swin_preflop+river`,
+      `allin_low+high_preflop`,
+    ]
 
-    console.log(res.samples(`high_sloss`, 8)?.map(_ => _.map(_ => _.fen)))
+    return new Map(basic.map(sample =>
+                      [sample, res.samples(sample).length]))
   }
 }
 
