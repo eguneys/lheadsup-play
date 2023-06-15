@@ -148,18 +148,23 @@ export class RangeStats {
 
     await copy_range_hs_to_street()
 
-    this.add_union_ranges('total', game_results)
-    this.add_union_ranges('lowmed', ['low', 'med'])
+    this.add_uk(game_results.join('+'), 'ends')
+    this.add_uk(`fwin+floss`, 'f')
+    this.add_uk(`swin+sloss`, 's')
+  }
 
-    this.add_intersect_ranges('call_lowmed_river', 
-                              ['call', 'lowmed', 'river'])
-
-    this.add_intersect_ranges('call_med_sloss_river', 
-                              ['call', 'med', 'sloss', 'river'])
-
-
-    this.add_intersect_ranges('call_med_preflop',
-                              ['call', 'med', 'preflop'])
+  add_uk(key: string, alt_key?: string) {
+    let cs = key.split('_')
+    cs.forEach(c => {
+      if (!this.ranges.has(c)) {
+        let us = c.split('+')
+        this.add_union_ranges(c, us)
+      }
+    })
+    this.add_intersect_ranges(key, key.split('_'))
+    if (alt_key) {
+      this.ranges.set(alt_key, this.ranges.get(key))
+    }
   }
 }
 

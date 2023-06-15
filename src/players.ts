@@ -47,9 +47,18 @@ class MatchMetricsLogger {
 class MatchPovMetricLogger {
   static log = async (metric: MatchPovMetric) => {
     let res = new RangeStats(metric.data)
-    return res.fill_async().then(() => {
-      console.log(res.ranges)
-    })
+    await res.fill_async()
+
+    res.add_uk(`fold_med+high_preflop+river`)
+    res.add_uk(`check+call_high_preflop+river`)
+    res.add_uk(`call_low+med_river`)
+    res.add_uk(`call_med_sloss_river`)
+    res.add_uk(`raise_low+med_s_preflop+river`)
+    res.add_uk(`raise_low+med_fwin_preflop+river`)
+    res.add_uk(`raise_low+med_swin_preflop+river`)
+    res.add_uk(`allin_low+high_preflop`)
+
+    console.log(res.ranges)
   }
 }
 
