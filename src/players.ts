@@ -62,6 +62,10 @@ class MatchPovMetricSampleAggregator {
 
     let basic = [
       `deal`,
+      `preflop_ends`,
+      `flop_ends`,
+      `turn_ends`,
+      `river_ends`,
       `swin`,
       `sloss`,
       `fwin`,

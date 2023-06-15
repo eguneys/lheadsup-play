@@ -5,6 +5,7 @@ import { ehs } from './cards'
 import { predict_strs } from './neural'
 import { get_files } from './util'
 import { read_from_data_training } from './ehs_train'
+import { ehs_async_str, ehs_str } from './cards'
 
 const phase_long: Record<string, string> = {
   'p': 'Preflop',
@@ -55,9 +56,16 @@ async function batched_neural_all_log(data: [string, number][]) {
     let o = output.map(_ => _[0])
     let acc = o.filter((o, i) => Math.abs(expected[i] - o) < 0.09)
 
-    let outliers = o.filter((o, i) => Math.abs(expected[i] - o) > 0.2)
+    let outliers = o.filter((o, i) => Math.abs(expected[i] - o) >= 0.2)
 
-    return `${network.name} A: ${(acc.length / o.length).toFixed(2)} O: ${(outliers.length / o.length).toFixed(2)}`
+    let off_cards = o.map((o, i) => Math.abs(expected[i] - o) >= 0.2 ? 
+                          `${cards[i]}:${expected[i]}` : undefined).filter(Boolean)
+
+    let res = `${network.name} A: ${(acc.length / o.length).toFixed(2)} O: ${(outliers.length / o.length).toFixed(2)}`
+
+    res += '\n' + off_cards.slice(0, 10).join(' ')
+
+    return res
   }))
 
   console.log(res.join('\n'))
@@ -83,6 +91,15 @@ export async function test_acc_main(phase: string, nb: number = 100) {
     await acc(phase)
     console.log('\n')
   }
+}
+
+export async function test_acc_main2() {
+  let fen = 'JsAh4sJcKcQd9s'
+  console.log([
+    fen,
+    await ehs_str(fen),
+    await ehs_async_str(fen),
+  ])
 }
 
 export async function test_acc_high_from_data() {

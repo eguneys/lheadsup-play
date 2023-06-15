@@ -226,8 +226,9 @@ class Metric {
   }
 }
 
+/*
 export function ehs_train_stats() {
-  /*
+
   let a = `Kh8hKdAdKc9c7c` 
   let b = `Kh9hKsKcAc8c5c`
 
@@ -241,8 +242,6 @@ export function ehs_train_stats() {
   console.log(b, st_b)
 
   return
-
- */
 
 
   let data = []
@@ -274,6 +273,7 @@ export function ehs_train_stats() {
   console.log(metrics.sort((a, b) => b.value - a.value).map(_ => _.fen))
 }
 
+*/
 
 function sum(a: number[]) { return a.reduce((a, b) => a + b, 0) }
 

@@ -1,4 +1,4 @@
-import { read_from_data_training, ehs_train_prebatch, ehs_train_main, ehs_train_stats } from './ehs_train'
+import { read_from_data_training, ehs_train_prebatch, ehs_train_main } from './ehs_train'
 import { make_deal, split_cards } from 'lheadsup'
 
 

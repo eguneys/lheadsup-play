@@ -1,11 +1,12 @@
 import { ehs_train_main } from './ehs_train'
 import { parallel_work } from './cluster'
-import { test_neural_debug, test_acc_main } from './ehs_acc_test'
+import { test_neural_debug, test_acc_main, test_acc_main2 } from './ehs_acc_test'
 
 import { mash_main } from './mash2'
 
-mash_main()
+//import './cards2'
 
+//mash_main()
 //test_phases()
 
 
@@ -13,6 +14,8 @@ async function test_phases() {
   await test_acc_main('f', 2)
   await test_acc_main('t', 2)
   await test_acc_main('r', 2)
+
+  await test_acc_main2()
 }
 
 function train_main() {

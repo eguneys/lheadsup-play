@@ -1,8 +1,10 @@
-import { Card, shuffle, hand_rank, cards } from 'lheadsup'
+import { split_cards, Card, shuffle, hand_rank, cards } from 'lheadsup'
 import { predict_strs } from './neural'
+import { mean } from './util'
 
 const dummy = 'AhAhAhAhAh'
 const pad_flop = (_: string) => _.length === 4 ? dummy : _
+
 
 export async function ehs_async_batched(hb: [Card[], Card[]][], nb = 50, use_cache = true) {
   if (hb.length === 0) {
@@ -34,19 +36,37 @@ export function card_outs(excludes: Card[], n: number) {
   return shuffle(cards.filter(_ => !excludes.includes(_))).slice(0, n)
 }
 
+let cache = (() => {
+  let res: Record<string, number> = {}
 
+  let hands = cards.flatMap(c1 => 
+                cards.map(c2 => c1 === c2 ? undefined : [c1, c2]).filter(Boolean))
 
+  hands.forEach(hand => {
 
-let cache: any = {}
+    let v = []
+    for (let i = 0; i < 20; i++) {
+      let board = card_outs(hand!, 5)
+      v.push(ehs(hand!, board))
+    }
+    console.log(hand!.join(''), v)
+    res[hand!.join('')] = mean(v)
+  })
+  console.log(res)
+  return res
+})()
 
-export function ehs(hand: Card[], board: Card[], nb = 50, use_cache = true) {
-  let ahead = 0
+export function ehs_preflop(hand: Card[]) {
+  return 0
+  //return cache[hand.join('')]
+}
 
-  let i = cache[hand.join('') + board.join('')]
-  if (use_cache && i) {
-    return i
+export function ehs(hand: Card[], board: Card[], nb = 50, use_cache = true): number {
+  if (board.length === 0) {
+    return ehs_preflop(hand)
   }
 
+  let ahead = 0
   for (let i = 0; i < nb; i++) {
     let op = card_outs([...board, ...hand], 2)
     let board_rest = card_outs([...hand, ...board, ...op], 5 - board.length)
@@ -54,36 +74,30 @@ export function ehs(hand: Card[], board: Card[], nb = 50, use_cache = true) {
     let my_hand = [...hand, ...board, ...board_rest]
     let op_hand = [...op, ...board, ...board_rest]
 
-    if (hand_rank(my_hand).hand_eval >= hand_rank(op_hand).hand_eval) {
-      ahead ++;
+    let my_eval = hand_rank(my_hand).hand_eval 
+    let op_eval = hand_rank(op_hand).hand_eval
+    if (my_eval > op_eval) {
+      ahead++;
+    } else if (my_eval === op_eval) {
+      if (ehs_preflop(hand) * 1.99 > Math.random()) {
+        ahead++;
+      }
     }
   }
   let res = ahead / nb
 
-  if (use_cache) {
-    cache[hand.join('') + board.join('')] = res
-  }
   return res
 }
 
-/*
-let res: any = []
-for (let i = 0; i < 100; i++) {
-  let hand = card_outs([], 2)
-  res.push([hand.join(''), ehs(hand, [])])
+export async function ehs_async_str(s: string) {
+  let cards = split_cards(s)
+  return ehs_async(cards.slice(0, 2), cards.slice(2))
 }
-res.sort((a: any, b: any) => a[1] - b[1])
-console.log(res)
-console.log(ehs(['Kc', 'Qd'], []))
-console.log(ehs(['Ac', 'Qd'], []))
-console.log(ehs(['Ac', 'Ad'], []))
-*/
-//console.log(ehs(['Td', 'Qh'], ['2c', 'Jd', 'Kc']))
-//
-//console.log(ehs(['2s', '4h'], ['Td','Tc','6h','Qs']))
-// console.log(ehs(['9s', '3c'], ['8s','Td','6s','Ah']))
-//console.log(ehs(['Qs', 'Qc'], []))
-//console.log(ehs(['As', 'Kc'], []))
-//console.log(ehs(['As', 'Ks'], []))
+
+export function ehs_str(s: string) {
+  let cards = split_cards(s)
+  return ehs(cards.slice(0, 2), cards.slice(2))
+}
+
 
 
