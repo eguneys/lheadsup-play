@@ -4,9 +4,12 @@ import { Card, split_cards, make_cards } from 'lheadsup'
 import { stats_cards } from './ehs_stats'
 
 function log_line(line: string) {
+  /*
   process.stdout.clearLine(-1)
   process.stdout.cursorTo(0)
   process.stdout.write(line)
+ */
+  console.log(line)
 }
 
 function card_sort(a: Card, b: Card) {
