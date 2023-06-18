@@ -15,7 +15,7 @@
     "start": "node ./dist/main.js",
     "train:mix": "mkdir -p out_data && node ./dist/main.js --train=mix -d out_data",
     "train:flop": "mkdir -p out_data && node ./dist/main.js --train=flop -d out_data",
-    "train:prod": "mkdir -p out_data && node ./dist/main.js --train=flop -b 100 -c 6 -d out_data"
+    "train:prod": "mkdir -p out_data && node ./dist/main.js --train=flop -b 400 -c 64 -d out_data"
   },
   "keywords": [],
   "author": "",
