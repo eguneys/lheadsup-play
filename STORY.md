@@ -165,7 +165,7 @@ To summarize, I achieved 80% accuracy, and 6% error. Now I am going to use this 
 
 ## What's Next
 
-Check out the second part of the article where we discuss, several improvements to our current approach, building a front end, and tackling with a more advanced Poker AI.
+Check out the [second part of the article](STORY2.md) where we discuss, several improvements to our current approach, building a front end, and tackling with a more advanced Poker AI.
 
 ## Support
 
