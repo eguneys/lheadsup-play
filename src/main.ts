@@ -1,6 +1,6 @@
 import { parseArgs } from 'node:util'
 import { ehs_stats } from './ehs_stats'
-import { gen_ehs_train } from './ehs_train'
+import { gen_ehs_train, TrainPhase } from './ehs_train'
 
 try {
 
@@ -12,15 +12,32 @@ try {
     train: {
       type: 'string' as 'string',
       short: 't'
+    },
+    'batch_size': {
+      type: 'string' as 'string',
+      short: 'b'
+    },
+    'nb_chunks': {
+      type: 'string' as 'string',
+      short: 'c'
+    },
+    'folder_name': {
+      type: 'string' as 'string',
+      short: 'd'
     }
   }
 
   const { values } = parseArgs({ options })
   main(parse_values(values))
 } catch (e) {
-  console.log((e as Error).message)
+  if (typeof e === 'string') {
+    console.log(e)
+  } else {
+    console.log((e as Error).message)
+  }
   process.exit(-1)
 }
+
 
 function parse_values(args: any): CmdLineArgs {
 
@@ -28,27 +45,46 @@ function parse_values(args: any): CmdLineArgs {
     return { stats: true }
   }
 
+  let train: TrainPhase
   switch (args.train) {
-    case 'flop': return { train: 'flop' }
-    case 'turn': return { train: 'turn' }
-    case 'river': return { train: 'river' }
-    case 'mix': return { train: 'mix' }
-    default: return { train: 'mix' }
+    case 'flop': train = 'flop'
+    break
+    case 'turn': train = 'turn'
+    break
+    case 'river': train = 'river'
+    break
+    case 'mix': train = 'mix'
+    break
+    default: train = 'mix'
+  }
+  let batch_size = parseInt(args.batch_size) || 1
+  let nb_chunks = parseInt(args.nb_chunks) || 10
+  let folder_name = args.folder_name ?? 'out_data'
+
+  return {
+    train,
+    batch_size,
+    nb_chunks,
+    folder_name
   }
 }
 
 type CmdLineArgs = {
   stats?: boolean,
-  train?: 'flop' | 'turn' | 'river' | 'mix'
+  train?: TrainPhase,
+  nb_chunks?: number,
+  batch_size?: number,
+  folder_name?: string
 }
 
 function main(args: CmdLineArgs) {
   if (args.stats) {
     console.log('Stats')
     ehs_stats()
-  } else if (args.train) {
-
-    console.log(`Train ${args.train}`)
-    gen_ehs_train()
+  } else if (args.train && args.nb_chunks && args.batch_size && args.folder_name) {
+    console.log(`Train ${args.train} ${args.nb_chunks}x${args.batch_size}`)
+    gen_ehs_train(args.train, args.nb_chunks, args.batch_size, args.folder_name)
+  } else {
+    throw "Nothing to do"
   }
 }

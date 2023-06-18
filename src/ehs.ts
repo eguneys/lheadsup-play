@@ -1,5 +1,6 @@
 import { cards, Card, shuffle, lookup_cards } from 'lheadsup'
 
+const epsilon = 1e-5
 type Card2 = [Card, Card]
 type Card3 = [Card, Card, Card]
 
@@ -97,8 +98,8 @@ export function hp(hand: Card2, flop: Card3, tr: Card[]) {
 
   let hs = (HS[ahead] + HS[tied] / 2) / (HS[ahead] + HS[tied] + HS[behind])
 
-  let Ppot = (HP[behind][ahead] + HP[behind][tied] / 2 + HP[tied][ahead] / 2) / (HPTotal[behind] + HPTotal[tied])
-  let Npot = (HP[ahead][behind] + HP[tied][behind] / 2 + HP[ahead][tied] / 2) / (HPTotal[ahead] + HPTotal[tied])
+  let Ppot = (HP[behind][ahead] + HP[behind][tied] / 2 + HP[tied][ahead] / 2) / (HPTotal[behind] + HPTotal[tied] + epsilon)
+  let Npot = (HP[ahead][behind] + HP[tied][behind] / 2 + HP[ahead][tied] / 2) / (HPTotal[ahead] + HPTotal[tied] + epsilon)
 
   return [hs, Ppot, Npot]
 }

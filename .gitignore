@@ -3,3 +3,4 @@ dist/
 networks/
 data/
 backup_data/
+out_data/
