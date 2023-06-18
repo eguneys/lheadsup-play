@@ -1,5 +1,5 @@
-import { make_deal, split_cards, shuffle, Card } from 'lheadsup'
-import { card_outs, ehs, hs, hp } from './ehs'
+import { make_cards, split_cards, shuffle, Card } from 'lheadsup'
+import { card_outs, ehs, hp, ehsp } from './ehs'
 
 type Card2 = [Card, Card]
 type Card3 = [Card, Card, Card]
@@ -9,44 +9,26 @@ type Card5 = [Card, Card, Card, Card, Card]
 // ehs(hs, npot, ppot)
 // hs(hand, flop, tr)
 // hp(hand, flop, tr)
-function stats(hand: [Card, Card], flop: [Card, Card, Card], turn?: Card, river?: Card) {
-  let hs_, ppot, npot, ehs_
-
-  if (!turn) {
-    hs_ = hs(hand, flop, []);
-    [ppot, npot] = hp(hand, flop, [])
-    ehs_ = ehs(hs_, npot, ppot)
-  } else if (!river) {
-    hs_ = hs(hand, flop, [turn]);
-    [ppot, npot] = hp(hand, flop, [turn])
-    ehs_ = ehs(hs_, npot, ppot)
-  } else {
-    hs_ = hs(hand, flop, [turn, river]);
-    [ppot, npot] = hp(hand, flop, [turn, river])
-    ehs_ = ehs(hs_, npot, ppot)
-  }
-
-  return [hs_, ehs_, ppot, npot].map(_ => _.toFixed(2))
-}
-
-function stats_cards(str: string = make_deal(9)) {
+//
+export function stats_cards(str: string) {
   let cards = split_cards(str)
   let [hand, flop, turn, river] = [
     cards.slice(0, 2),
     cards.slice(2, 5),
     cards[5], cards[6]]
 
-  return stats(hand as Card2, flop as Card3, turn, river)
+  return ehsp(hand as Card2, flop as Card3, turn, river)
 }
 
-function log_cards(str?: string) {
-  console.log(stats_cards(str))
+function log_cards(str: string = make_cards(7)) {
+  let stats = stats_cards(str)
+  console.log(str, stats.map(_ => _.toFixed(2)).join(' '))
 }
 
 export function ehs_stats() {
-  // `3c2c4d9hJc5c` 0.00 0.00 0.00 0.00
-
-  log_cards(`3c2c4d9hJc5c`)
-  log_cards()
-
+  for (let i = 0; i < 3; i++) {
+    for (let j = 0; j < 6; j++) {
+      log_cards(make_cards(5 + i))
+    }
+  }
 }
