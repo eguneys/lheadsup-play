@@ -13,9 +13,9 @@
     "test:watch": "vitest --watch",
     "bench": "vitest bench",
     "start": "node ./dist/main.js",
-    "train:mix": "node ./dist/main.js --train=mix",
-    "train:flop": "node ./dist/main.js --train=flop",
-    "train:prod": "node ./dist/main.js --train=mix -b 100 -c 6"
+    "train:mix": "mkdir -p out_data && node ./dist/main.js --train=mix -d out_data",
+    "train:flop": "mkdir -p out_data && node ./dist/main.js --train=flop -d out_data",
+    "train:prod": "mkdir -p out_data && node ./dist/main.js --train=flop -b 100 -c 6 -d out_data"
   },
   "keywords": [],
   "author": "",

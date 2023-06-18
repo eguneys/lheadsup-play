@@ -1,4 +1,5 @@
 import { parseArgs } from 'node:util'
+import { parallel_work } from './cluster'
 import { ehs_stats } from './ehs_stats'
 import { gen_ehs_train, TrainPhase } from './ehs_train'
 
@@ -82,8 +83,11 @@ function main(args: CmdLineArgs) {
     console.log('Stats')
     ehs_stats()
   } else if (args.train && args.nb_chunks && args.batch_size && args.folder_name) {
+    const { nb_chunks, train, batch_size, folder_name } = args
     console.log(`Train ${args.train} ${args.nb_chunks}x${args.batch_size}`)
-    gen_ehs_train(args.train, args.nb_chunks, args.batch_size, args.folder_name)
+    parallel_work(cpus => {
+      return gen_ehs_train(train, Math.ceil(nb_chunks / cpus), batch_size, folder_name)
+    }, 1)
   } else {
     throw "Nothing to do"
   }
