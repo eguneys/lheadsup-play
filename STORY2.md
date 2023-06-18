@@ -12,6 +12,17 @@ Finally we mentioned the performance bottleneck of calculating the hand strength
 
 ## Refining and Optimizing Previous Methods
 
+Last time we built a neural network that can evaluate the hand strength of a player using 2 cards in hand and the board cards. Our next iteration started with integrating this into our MCTS algorithm that searches for optimal play by evaluating the terminal states of a poker round.
+
+The neural network returns the output asynchronously, so we have to consider that. Also it can take input in batches. Which would potentially be faster if we send a batch of input instead of asking one by one.
+
+I know that lc0 code uses multithreading, and it has a concept of `GatherMiniBatch`, which is probably meaning it gathers a batch of input to evaluate for it's neural network. But I have a few questions, and I can't fully decipher the algorithm as there are a few other concepts I don't know about.
+
+The main problem is, If I were to select multiple leaves to evaluate, the UCB formula would select the same leaf every time. To reiterate, leaves are selected, which they have no children, because only terminal states are sent for evaluation that is only leaves, starting from the root, going to a leaf, at each node along the way an UCB formula is used to select which child node to select. These are well explained in my continued discussion about the MCTS with ChatGPT, which there is a link [below](). That is the continuation of my previous discussion so it has more content, but you can skip the first parts.
+
+# Interesting ChatGPT Conversations
+
+[MCTS continued discussion about batching, and backpropagation](https://chat.openai.com/share/d287c5d9-5060-4562-8ebd-653e4fc37cdd)
 
 ## Support
 
