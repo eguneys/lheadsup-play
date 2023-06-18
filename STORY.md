@@ -32,7 +32,7 @@ The players can be on various states like, "phase", "allin", "folded", "deal", "
 
 The logic is carried out by one method `act(act: string)`. This accepts various dealer actions like 'deal', 'phase', 'showdown', 'share', as well as various player actions like 'check', 'call', 'fold', 'raise amount'. It doesn't check the validity of a given action, it just assumes it's valid and applies the logic. For example 'deal' action will deal the cards, post the blinds, and sets the player's states as "inthepot" and turn to act as "action". At various states of the simulation, the allowed actions (that can be passed to act method) can be queried by one getter method `.dests`. This will give you the allowed actions like dealer actions or player actions. It doesn't give you who's turn to act it assumes player actions are for the player who has the action.
 
-Here's the first test that plays a round of poker between 3 players [https://github.com/eguneys/lheadsup/blob/master/tests/round2.test.ts#L492](https://github.com/eguneys/lheadsup/blob/master/tests/round2.test.ts#L492).
+Here's the first test that plays a round of poker between 3 players [round2.test.ts](https://github.com/eguneys/lheadsup/blob/35f5501d0c03c8137a13c8e8dfa93d98e5ca324c/tests/round2.test.ts#L512).
 
 I've tried a few attempts at building the poker playing logic at [various times](https://github.com/eguneys/scalapoker). The [final version is here](https://github.com/eguneys/lheadsup).
 
@@ -151,7 +151,7 @@ Tackling with our real challenge, now we are more experienced.
 
 After fixing all the bugs, please take a look at the final results of various networks: [here](logs/ehs_neural_out.log).
 
-Explaing the logs, note that the game phase is written at the top, like Flop, Turn, River.
+To explain the logs, note that the game phase is written at the top, like Flop, Turn, River.
 As you can see `ehs1_mix_3x32-50000` performs the best at all phases. Because it is trained on all the data, while other networks are trained on data for specific phases. So I didn't need to split the data into phases after all.
 
 To summarize, I achieved 80% accuracy, and 6% error. Now I am going to use this mix network and move on to our final challenge.
@@ -163,9 +163,12 @@ To summarize, I achieved 80% accuracy, and 6% error. Now I am going to use this 
 - [10 example networks](https://chat.openai.com/share/62c9603b-e166-4651-ab6f-1605cb90bc21)
 - [swarming word](https://chat.openai.com/share/180a4dd8-5592-4557-be0a-16816c8af838)
 
+## What's Next
+
+Check out the second part of the article where we discuss, several improvements to our current approach, building a front end, and tackling with a more advanced Poker AI.
 
 ## Support
 
 Please share your comments and suggestions here.
 Don't forget to follow this repo for news and updates on future progress.
-If you would like to donate, here's my patreon: https://www.patreon.com/eguneys
+If you would like to donate, here's my [buy me a coffee](https://www.buymeacoffee.com/eguneys)
