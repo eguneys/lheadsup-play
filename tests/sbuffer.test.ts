@@ -59,6 +59,6 @@ it('works', async () => {
 
   await r.fill_async()
 
-  console.log(r.ranges)
+  //console.log(r.ranges)
   expect(r.samples('deal').length).toBe(4)
 })

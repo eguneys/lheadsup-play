@@ -6,6 +6,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
+    "copy_data": "mkdir data -p && cp ./node_modules/lheadsup/data/HandRanks.dat data/",
     "build": "rimraf dist && esbuild ./src/main.ts --platform=node --format=esm --bundle --outdir=dist --banner:js=\"import { createRequire } from 'module'; const require = createRequire(import.meta.url);\" && tsc --emitDeclarationOnly",
     "lint:watch": "tsc --noEmit --watch",
     "test": "vitest --run",
