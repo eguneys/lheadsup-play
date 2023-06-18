@@ -18,11 +18,24 @@ The neural network returns the output asynchronously, so we have to consider tha
 
 I know that lc0 code uses multithreading, and it has a concept of `GatherMiniBatch`, which is probably meaning it gathers a batch of input to evaluate for it's neural network. But I have a few questions, and I can't fully decipher the algorithm as there are a few other concepts I don't know about.
 
-The main problem is, If I were to select multiple leaves to evaluate, the UCB formula would select the same leaf every time. To reiterate, leaves are selected, which they have no children, because only terminal states are sent for evaluation that is only leaves, starting from the root, going to a leaf, at each node along the way an UCB formula is used to select which child node to select. These are well explained in my continued discussion about the MCTS with ChatGPT, which there is a link [below](). That is the continuation of my previous discussion so it has more content, but you can skip the first parts.
+The main problem is, If I were to select multiple leaves to evaluate, the UCB formula would select the same leaf every time. To reiterate, leaves are selected, which they have no children, because only terminal states are sent for evaluation that is only leaves, starting from the root, going to a leaf, at each node along the way an UCB formula is used to select which child node to select. These are well explained in my discussion about the MCTS with ChatGPT, which there is a link [below](#interesting-chatgpt-conversations).
+
+So digging deeper, lc0 mentions about a PUCT formula instead of UCB it uses, which reveals things about "Multi-armed Bandits with Episode Context". I gave various links explaining these concepts below. In summary PUCT formula is about adding a policy to node selection formula, in addition to evaluating the value of a node. The policy is the probabilities of each move being played starting from a node. This policy is also trained in the network along with a value for the node. And used for scoring for selecting nodes to visit.
+
+However this doesn't answer how to select multiple leaves for gathering a batch of input. But it led me to this paper I gave a link below, that discusses precisely this problem and gives a full algorithm in addition to mentioning a few terms that englightens the whole idea of how lc0 MCTS works. Terms like "Fpu", and "virtual loss", or as lc0 calls it "N-in-flight".
+
+Gathered with this knowledge, now lc0 C++ code makes way more sense, I get almost the full picture and copied exactly into Javascript code. Yet still there are a few details I have to figure out, which we will deal with later.
+
+
 
 # Interesting ChatGPT Conversations
 
-[MCTS continued discussion about batching, and backpropagation](https://chat.openai.com/share/d287c5d9-5060-4562-8ebd-653e4fc37cdd)
+[MCTS continued discussion about batching, and backpropagation](https://chat.openai.com/share/4ebf290b-bd22-4b6f-9813-72493055c887)
+[A comprehensive paper about batching in MCTS](https://ludii.games/citations/ARXIV2021-1.pdf)
+[lc0 mentions PUCT from Multi-armed Bandits with Episode Context](https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.172.9450&rep=rep1&type=pdf)
+[Blog article about Multi-armed Bandits and Exploration Strategies with example code in gist.](https://sudeepraja.github.io/Bandits/)
+[lc0 mentions AGZ paper](https://www.deepmind.com/blog/alphago-zero-starting-from-scratch)
+
 
 ## Support
 
