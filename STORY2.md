@@ -26,16 +26,42 @@ However this doesn't answer how to select multiple leaves for gathering a batch 
 
 Gathered with this knowledge, now lc0 C++ code makes way more sense, I get almost the full picture and copied exactly into Javascript code. Yet still there are a few details I have to figure out, which we will deal with later.
 
+Next, another question is, about the point of view for evaluating nodes. Nodes are evaluated using player 1's point of view. Like value is high if terminal state is in player 1's best interest. This leads to a question, alternating nodes select moves for player 1 and player 2. But If I am always evaluating for player 1's best interest, how is player 2 selecting moves that are high for player 1. This discussion is also well explained in my chat with ChatGPT below.
 
+Though I am still not clear, I made a few adjustments, and integrated the async nature of the evaluation algorithm into current MCTS Player. Using the benchmarks and various debugging sessions, it plays way fast for sure. It can also be seen as playing interesting by calling, raising folding etc. But I am not sure if the algorithm is working as expected. I used debugging on lc0 C++ code to figure out how the values change, but I have to investigate further. Let's set this aside though.
+
+Next, looking at the stats, for example winning results, MCTS is not worse, but it's at most even. But I need to get a better picture of how it's playing, so I figured out a way to better extract statistics from a tournament session. There are 4 categories a state of poker round has. 
+- An action like, fold, check, raise, call
+- The hand strength like, low, medium, high, nuts
+- The street like preflop, flop, turn, or river
+- And the round result like fold win, fold loss, showdown win or showdown loss.
+
+So I gather a stream of round states sampled at every state change. And put a range of these states at an item for each category. Like from states 2 to 6 it's preflop, or also low hand strength, since hand strengths only change at each street. I can also compose these items from different categories and query for a specific situations like this:
+
+`fwin`, `nuts_sloss`, `low_swin`, `low_fwin`, meaning `fold win`, `showdown loss with nuts`, `swowdown win with a low hand`, `fold win with a low hand`. Or more advanced queries like this:
+
+- `call_med_sloss_river` Call with a medium hand at river resulting in a showdown loss
+- `raise_low+med_s_preflop+river` Raise with a low or medium hand at preflop or river resulting in showdown
+- `raise_low+med_fwin_preflop+river` etc.
+
+This is exciting and more fun, and can be potentially improved, but I need useful statistics and meaningful results for these metrics.
+
+For example, looking at these statistics, I noticed it gives false positives for considering mediocre hands as nuts. So I turn on to fundamentals and re-evaluate our methods.
+
+### A Better Hand Evaluation Algorithm
+
+Stumbled upon an algorithm [by Cactus](http://suffe.cool/poker/evaluator.html) for 5 hand evaluation, and later a better one called [Two Plus Two](https://www.codingthewheel.com/archives/poker-hand-evaluator-roundup/) for 5, 6, and 7 hands which significantly improved and evaporated our performance problems once and for all, while putting our neural network efforts obselete.
 
 # Interesting ChatGPT Conversations
 
-[MCTS continued discussion about batching, and backpropagation](https://chat.openai.com/share/4ebf290b-bd22-4b6f-9813-72493055c887)
-[A comprehensive paper about batching in MCTS](https://ludii.games/citations/ARXIV2021-1.pdf)
-[lc0 mentions PUCT from Multi-armed Bandits with Episode Context](https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.172.9450&rep=rep1&type=pdf)
-[Blog article about Multi-armed Bandits and Exploration Strategies with example code in gist.](https://sudeepraja.github.io/Bandits/)
-[lc0 mentions AGZ paper](https://www.deepmind.com/blog/alphago-zero-starting-from-scratch)
+- [MCTS continued discussion about batching, and backpropagation](https://chat.openai.com/share/4ebf290b-bd22-4b6f-9813-72493055c887)
+- [A comprehensive paper about batching in MCTS](https://ludii.games/citations/ARXIV2021-1.pdf)
+- [lc0 mentions PUCT from Multi-armed Bandits with Episode Context](https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.172.9450&rep=rep1&type=pdf)
+- [Blog article about Multi-armed Bandits and Exploration Strategies with example code in gist.](https://sudeepraja.github.io/Bandits/)
+- [lc0 mentions AGZ paper](https://www.deepmind.com/blog/alphago-zero-starting-from-scratch)
 
+- [Cactus 5-Hand Poker Hand Evaluation](http://suffe.cool/poker/evaluator.html)
+- [The Two Plus Two Poker Hand Evaluation for 5 6 and 7 cards](https://www.codingthewheel.com/archives/poker-hand-evaluator-roundup/)
 
 ## Support
 
