@@ -13,5 +13,5 @@
     "outDir": "dist"
   },
   "include": ["src"],
-  "exclude": ["dist", "node_modules"]
+  "exclude": ["src/legacy", "dist", "node_modules"]
 }

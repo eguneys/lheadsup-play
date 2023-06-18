@@ -1,5 +1,5 @@
 import { RoundNPov } from 'lheadsup'
-import { ehs, ehs_async, ehs_async_batched } from './cards'
+import { ehs_async_batched } from './ehs'
 
 type AllRange = 1
 type EmptyRange = 0
@@ -27,15 +27,6 @@ function get_phase(n: RoundNPov) {
     return 'preflop'
   }
   return 'deal'
-}
-
-async function get_hs_slow(n: RoundNPov) {
-  let hand = n.stacks[0].hand
-  let board = n.middle
-
-  if (hand && board) {
-    return mix_range(await ehs_async(hand, board), hand_strengths)
-  }
 }
 
 const dummy_hand = ['Ah', 'Ah']
