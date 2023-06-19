@@ -12,7 +12,7 @@ function log_line(line: string) {
   console.log(line)
 }
 
-function card_sort(a: Card, b: Card) {
+export function card_sort(a: Card, b: Card) {
   if (a[1] === b[1]) {
     if (a[0] === b[0]) {
       return 0
@@ -50,8 +50,8 @@ type TrainingData = {
 }
 
 const suits = 'hdsc'
-const ranks = '23456789TJQKA'
-const encode_suit: Record<string, number> = { 'h': 1, 's': 2, 'd': 4, 'c': 8 }
+export const ranks = '23456789TJQKA'
+export const encode_suit: Record<string, number> = { 'h': 1, 's': 2, 'd': 4, 'c': 8 }
 
 function encode_cards7(cards: Card[]) {
   let res = Array(7 * 2).fill(0)
