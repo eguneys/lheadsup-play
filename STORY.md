@@ -157,6 +157,7 @@ As you can see `ehs1_mix_3x32-50000` performs the best at all phases. Because it
 To summarize, I achieved 80% accuracy, and 6% error. Now I am going to use this mix network and move on to our final challenge.
 
 ## Interesting ChatGPT Conversations
+- [Legal considerations](https://chat.openai.com/share/79cca8e8-bbc3-4808-b6e2-4d8661103835)
 - [MCTS in Javascript](https://chat.openai.com/share/4ebf290b-bd22-4b6f-9813-72493055c887)
 - [Compute Engine Scripts](https://chat.openai.com/share/88f0b611-3fba-4b75-9372-f7ae1a841764)
 - [Loss function](https://chat.openai.com/share/bf3503ad-d2ff-4b2d-b259-1f28ee5957dc)
