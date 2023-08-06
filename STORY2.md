@@ -57,7 +57,7 @@ Stumbled upon an algorithm [by Cactus](http://suffe.cool/poker/evaluator.html) f
 
 I've interrupted my development process at this point writing the article, now I am writing after I've resolved some issues. Now I have some different angles and a better perspective to the endgame.
 
-For more information, please checkout the [third issue of this article](https://chat.openai.com/share/c2ae96a2-d6a8-4499-9e9b-a594481271de).
+For more information, please checkout the [third issue of this article](STORY3.md).
 
 # References
 
