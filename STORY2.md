@@ -52,6 +52,13 @@ For example, looking at these statistics, I noticed it gives false positives for
 
 Stumbled upon an algorithm [by Cactus](http://suffe.cool/poker/evaluator.html) for 5 hand evaluation, and later a better one called [Two Plus Two](https://www.codingthewheel.com/archives/poker-hand-evaluator-roundup/) for 5, 6, and 7 hands which significantly improved and evaporated our performance problems once and for all, while putting our neural network efforts obselete.
 
+
+### Post Mortem For Personal Well Being
+
+I've interrupted my development process at this point writing the article, now I am writing after I've resolved some issues. Now I have some different angles and a better perspective to the endgame.
+
+For more information, please checkout the [third issue of this article](https://chat.openai.com/share/c2ae96a2-d6a8-4499-9e9b-a594481271de).
+
 # References
 
 - [MCTS continued discussion about batching, and backpropagation](https://chat.openai.com/share/4ebf290b-bd22-4b6f-9813-72493055c887)
