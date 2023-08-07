@@ -4,3 +4,4 @@ networks/
 data/
 backup_data/
 out_data/
+*.code-workspace
