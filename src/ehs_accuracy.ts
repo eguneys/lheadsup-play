@@ -1,3 +1,5 @@
+import { predict_strs, networks_all } from './neural'
+
 
 async function batched_neural_all_log(data: [string, [number, number, number]][]) {
   let cards = data.map(_ => _[0])

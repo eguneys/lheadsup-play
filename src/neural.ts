@@ -19,7 +19,7 @@ function TransposeTensor(from: number[], dims: number[], order: number[] = []) {
     }
   }
 
-  let to = []
+  let to: number[] = []
   let cur_idx = Array(dims.length).fill(0)
   for (let _ = 0; _ < from.length; _++) {
     let from_idx = 0
@@ -28,6 +28,7 @@ function TransposeTensor(from: number[], dims: number[], order: number[] = []) {
       from_idx += cur_idx[i]
     })
     to.push(from[from_idx])
+
     for(let i = dims.length - 1; i >= 0; i--) {
       if (++cur_idx[i] === dims[i]) {
         cur_idx[i] = 0
@@ -42,7 +43,7 @@ function TransposeTensor(from: number[], dims: number[], order: number[] = []) {
 export function EncodeCardsForNN(hand: Card[], board: Card[]) {
   hand.sort(card_sort)
   board.sort(card_sort)
-  let res = []
+  let res: number[] = []
   for (let i = 0; i < 2; i++) {
     let [rank, suit] = hand[i]
     res[i * 2 + 0] = ranks.indexOf(rank) + 1
@@ -327,11 +328,12 @@ function MakeNetwork(input: Input, weights: WeightsLegacy) {
 
 
 
+type OutputShape = [number, number, number][]
 
 export class NetworkComputation {
 
   input!: tf.Tensor
-  output!: [number][]
+  output!: OutputShape
 
   raw_input: InputPlanes[] = []
 
@@ -353,7 +355,7 @@ export class NetworkComputation {
       const buffer = new Uint8Array(sample)
       for (let i = 0; i < buffer.length; i++) {
         const byte = buffer[i]
-        let res = []
+        let res: number[] = []
         for (let j = 0; j < 8; j++) {
           const bit = (byte >> j) & 1
           res.unshift(bit)
@@ -366,7 +368,7 @@ export class NetworkComputation {
 
   async ComputeAsync() {
     this.PrepareInput()
-    this.output = await (this.network.Compute(this.input) as tf.Tensor).array() as [number][]
+    this.output = await (this.network.Compute(this.input) as tf.Tensor).array() as OutputShape
   }
 
   GetQVal(sample: number) {
