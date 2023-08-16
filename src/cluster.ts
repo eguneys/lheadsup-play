@@ -3,7 +3,7 @@ import cluster from 'cluster'
 import process from 'process'
 import { cpus } from 'os'
 
-export async function parallel_work(work: (nb: number) => Promise<void>, utilization: number = 0.5) {
+export async function parallel_work(work: (nb: number, id: number) => Promise<void>, utilization: number = 0.5) {
   //const numCPUs = availableParallelism()
   const numCPUs = cpus().length
   let used = Math.min(numCPUs, Math.ceil(numCPUs * utilization))
@@ -22,7 +22,7 @@ export async function parallel_work(work: (nb: number) => Promise<void>, utiliza
 
   } else {
     console.log(`Worker ${process.pid} started`)
-    await work(used)
+    await work(used, process.pid)
     console.log(`Worker ${process.pid} finished`)
     process.exit()
   }

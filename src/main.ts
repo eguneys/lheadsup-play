@@ -85,8 +85,8 @@ function main(args: CmdLineArgs) {
   } else if (args.train && args.nb_chunks && args.batch_size && args.folder_name) {
     const { nb_chunks, train, batch_size, folder_name } = args
     console.log(`Train ${args.train} ${args.nb_chunks}x${args.batch_size}`)
-    parallel_work(cpus => {
-      return gen_ehs_train(train, Math.ceil(nb_chunks / cpus), batch_size, folder_name)
+    parallel_work((cpus, id) => {
+      return gen_ehs_train(train, Math.ceil(nb_chunks / cpus), batch_size, `${folder_name}_${id}`)
     }, 1)
   } else {
     throw "Nothing to do"

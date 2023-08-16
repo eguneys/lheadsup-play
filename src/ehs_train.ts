@@ -101,6 +101,7 @@ export async function gen_ehs_train(phase: TrainPhase,
                               nb_chunks: number, 
                               batch_size: number,
                               foldername: string) {
+  log_line(`gen_ehs_train ${foldername} ${batch_size}x${nb_chunks}`)
   for (let i = 0; i < nb_chunks; i++) {
     log_line(`ehs-train ${i}/${nb_chunks}`)
     let data = gen_training_data_n(phase, batch_size)
