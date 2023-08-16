@@ -86,7 +86,7 @@ function main(args: CmdLineArgs) {
     const { nb_chunks, train, batch_size, folder_name } = args
     console.log(`Train ${args.train} ${args.nb_chunks}x${args.batch_size}`)
     parallel_work((cpus, id) => {
-      return gen_ehs_train(train, Math.ceil(nb_chunks / cpus), batch_size, `${folder_name}_${id}`)
+      return gen_ehs_train(train, Math.ceil(nb_chunks / cpus), batch_size, `${folder_name}/d_${id}`)
     }, 1)
   } else {
     throw "Nothing to do"

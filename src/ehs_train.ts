@@ -130,8 +130,8 @@ function write_training_data(id: number, data: TrainingData[], basefolder: strin
     zlib.gzip(buff, (err, buffer) => {
       let r = (Math.random() + 1).toString(36).substring(7)
       if (!fs.existsSync(basefolder)) {
-        //fs.mkdirSync(basefolder)
-        throw `Destination folder doesnt exist ${basefolder}`
+        fs.mkdirSync(basefolder, { recursive: true })
+        //throw `Destination folder doesnt exist ${basefolder}`
       }
 
       let filename = ['data_ehs', prefix, r, id].join('_')
