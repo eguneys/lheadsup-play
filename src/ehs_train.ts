@@ -9,7 +9,7 @@ function log_line(line: string) {
   process.stdout.cursorTo(0)
   process.stdout.write(line)
  */
-  console.log(line)
+  process.stdout.write(`\r${line}`)
 }
 
 export function card_sort(a: Card, b: Card) {
