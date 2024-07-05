@@ -1,4 +1,4 @@
-import { make_cards, split_cards, shuffle, Card } from 'lheadsup'
+import { make_cards, split_cards, Card } from 'phevaluatorjs25'
 import { card_outs, ehs, hp, ehsp } from './ehs'
 
 type Card2 = [Card, Card]

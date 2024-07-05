@@ -1,4 +1,4 @@
-import { GameN, Chips, make_deal, Side, Headsup, RoundNPov, RoundN, Dests } from 'lheadsup'
+import { GameN, Chips, make_deal, Side, Headsup, RoundNPov, RoundN, Dests } from 'phevaluatorjs25'
 
 function increase_blinds(blinds: Chips) {
   return blinds + 25

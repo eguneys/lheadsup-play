@@ -1,4 +1,4 @@
-import { RoundNPov } from 'lheadsup'
+import { RoundNPov } from 'phevaluatorjs25'
 import { ehs_async_batched } from './ehs'
 
 type AllRange = 1

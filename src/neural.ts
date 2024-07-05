@@ -1,7 +1,7 @@
 import * as tf from '@tensorflow/tfjs'
 import { get_files, decompress_gzip } from './util'
 
-import { Card, split_cards } from 'lheadsup'
+import { Card, split_cards } from 'phevaluatorjs25'
 import { encode_suit, ranks, card_sort } from './ehs_train'
 
 const kEpsilon = 1e-5

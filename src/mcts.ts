@@ -1,4 +1,4 @@
-import { RoundNPov } from 'lheadsup'
+import { RoundNPov } from 'phevaluatorjs25'
 
 
 export class Search {

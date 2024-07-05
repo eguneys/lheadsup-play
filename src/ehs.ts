@@ -1,12 +1,8 @@
-import { cards, Card, shuffle, lookup_cards_fast } from 'lheadsup'
+import { cards, Card, lookup_cards } from 'phevaluatorjs25'
 
 const epsilon = 1e-5
 type Card2 = [Card, Card]
 type Card3 = [Card, Card, Card]
-
-function lookup_cards(cards: Card[]) {
-  return lookup_cards_fast(cards)
-}
 
 export function card_outs(excludes: Card[]) {
   return cards.filter(_ => !excludes.includes(_))

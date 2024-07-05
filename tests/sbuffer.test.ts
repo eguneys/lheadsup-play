@@ -1,5 +1,5 @@
 import { it, expect } from 'vitest'
-import { RoundNPov } from 'lheadsup'
+import { RoundNPov } from 'phevaluatorjs25'
 import { RangeStats } from '../src/sbuffer'
 
 it('works', async () => {

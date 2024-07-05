@@ -1,4 +1,4 @@
-import { Side, Chips, Dests, RoundNPov, RoundN } from 'lheadsup'
+import { Side, Chips, Dests, RoundNPov, RoundN } from 'phevaluatorjs25'
 import { Spectator, Player } from './headsup_ai2'
 import { Search } from './mcts'
 import { RangeStats } from './sbuffer'

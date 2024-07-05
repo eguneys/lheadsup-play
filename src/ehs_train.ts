@@ -1,6 +1,6 @@
 import fs from 'fs'
 import zlib from 'node:zlib'
-import { Card, split_cards, make_cards } from 'lheadsup'
+import { Card, split_cards, make_cards } from 'phevaluatorjs25'
 import { stats_cards } from './ehs_stats'
 
 function log_line(line: string) {
